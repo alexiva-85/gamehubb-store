@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/aleksandrivashchenko/Desktop/MVP/src/app/error.tsx"],"sourcesContent":["'use client';\n\nimport { ErrorPage } from '@/components/ErrorPage';\n\nexport default ErrorPage;\n"],"names":[],"mappings":";;;;AAEA;AAFA;;uCAIe,+IAAS"}}]
-}

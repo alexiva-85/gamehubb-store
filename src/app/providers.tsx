@@ -8,6 +8,7 @@ import { OutsideTelegram } from '@/components/OutsideTelegram';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorPage } from '@/components/ErrorPage';
 import { useDidMount } from '@/hooks/useDidMount';
+import { isTelegramMiniApp, getTelegramWebApp } from '@/lib/telegram/env';
 
 // Dynamic import TelegramApp с ssr: false, чтобы код не выполнялся на сервере
 // и не бандлился для путей, где он не нужен
@@ -74,18 +75,37 @@ export function Providers({ children }: PropsWithChildren) {
   }
 
   // Проверяем окружение только после монтирования на клиенте
+  // Добавляем небольшую задержку, чтобы скрипт Telegram успел создать WebApp
   useEffect(() => {
     if (!didMount) {
       return;
     }
 
-    // Используем window.Telegram?.WebApp как источник правды
-    // Проверка выполняется ТОЛЬКО на клиенте
-    const tg = (typeof window !== 'undefined' ? (window as any).Telegram : null);
-    const webApp = tg?.WebApp;
-    const inTelegram = Boolean(webApp);
+    // Даем скрипту Telegram время на инициализацию
+    const checkTelegram = () => {
+      const inTelegram = isTelegramMiniApp();
+      setIsTelegram(inTelegram);
 
-    setIsTelegram(inTelegram);
+      // Если WebApp доступен, вызываем ready() и expand()
+      if (inTelegram) {
+        const webApp = getTelegramWebApp();
+        if (webApp) {
+          try {
+            webApp.ready();
+            webApp.expand();
+          } catch (error) {
+            // Игнорируем ошибки, если методы недоступны
+            console.warn('Telegram WebApp methods not available:', error);
+          }
+        }
+      }
+    };
+
+    // Проверяем сразу и через небольшую задержку
+    checkTelegram();
+    const timeoutId = setTimeout(checkTelegram, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [didMount]);
 
   // Пока не определили окружение - показываем загрузку

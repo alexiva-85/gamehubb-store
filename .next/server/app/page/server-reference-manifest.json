@@ -1,21 +1,6 @@
 {
   "node": {
-    "7f21a5b47e9d02d267a88e4c0a7df47a1c363eaf29": {
-      "workers": {
-        "app/page": {
-          "moduleId": 25402,
-          "async": false,
-          "exportedName": "getLocale",
-          "filename": "src/core/i18n/locale.ts"
-        }
-      },
-      "layer": {
-        "app/page": "rsc"
-      },
-      "exportedName": "getLocale",
-      "filename": "src/core/i18n/locale.ts"
-    },
-    "7fb7f6be81d48cc435bb9660a47329c41922398421": {
+    "7f2a176ce3c9b0bb7af4db05814f90f5f27f8e4d26": {
       "workers": {
         "app/page": {
           "moduleId": 25402,
@@ -28,6 +13,21 @@
         "app/page": "action-browser"
       },
       "exportedName": "setLocale",
+      "filename": "src/core/i18n/locale.ts"
+    },
+    "7fe96eb55733952d668484c7a48dca07bdf5cbeb05": {
+      "workers": {
+        "app/page": {
+          "moduleId": 25402,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        }
+      },
+      "layer": {
+        "app/page": "rsc"
+      },
+      "exportedName": "getLocale",
       "filename": "src/core/i18n/locale.ts"
     }
   },

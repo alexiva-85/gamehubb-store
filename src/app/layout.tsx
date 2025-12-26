@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from 'react';
 import type { Metadata } from 'next';
 import { getLocale } from 'next-intl/server';
+import Script from 'next/script';
 
 import { Providers } from './providers';
 import { I18nProvider } from '@/core/i18n/provider';
@@ -19,6 +20,12 @@ export default async function RootLayout({ children }: PropsWithChildren) {
 
   return (
     <html lang={locale} suppressHydrationWarning>
+      <head>
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body>
         <I18nProvider>
           <Providers>{children}</Providers>

@@ -11,6 +11,9 @@ export default function DebugPage() {
   const router = useRouter();
   const [debugInfo, setDebugInfo] = useState<{
     inTelegram: boolean;
+    hasWebAppObject: boolean;
+    hasWebviewProxy: boolean;
+    hasTgWebAppDataInUrl: boolean;
     hasInitData: boolean;
     initDataLength: number;
     platform: string;
@@ -25,11 +28,40 @@ export default function DebugPage() {
 
     const tg = (window as any).Telegram;
     const webApp = tg?.WebApp;
+    const hasWebAppObject = Boolean(webApp);
+    const hasWebviewProxy = Boolean((window as any).TelegramWebviewProxy);
+    
+    // Проверяем tgWebAppData в URL
+    const hash = window.location.hash || '';
+    const search = window.location.search || '';
+    const hasTgWebAppDataInUrl = hash.includes('tgWebAppData=') || search.includes('tgWebAppData=');
+    
+    // Определяем inTelegram
+    const inTelegram = hasWebAppObject || hasWebviewProxy || hasTgWebAppDataInUrl;
+    
+    // Определяем hasInitData и initDataLength
+    let hasInitData = false;
+    let initDataLength = 0;
+    
+    if (webApp?.initData) {
+      hasInitData = true;
+      initDataLength = webApp.initData.length;
+    } else if (hasTgWebAppDataInUrl) {
+      // Извлекаем tgWebAppData из URL для подсчета длины
+      const tgWebAppDataMatch = (hash + search).match(/tgWebAppData=([^&]+)/);
+      if (tgWebAppDataMatch && tgWebAppDataMatch[1]) {
+        hasInitData = true;
+        initDataLength = tgWebAppDataMatch[1].length;
+      }
+    }
 
     setDebugInfo({
-      inTelegram: Boolean(webApp),
-      hasInitData: Boolean(webApp?.initData),
-      initDataLength: webApp?.initData?.length ?? 0,
+      inTelegram,
+      hasWebAppObject,
+      hasWebviewProxy,
+      hasTgWebAppDataInUrl,
+      hasInitData,
+      initDataLength,
       platform: webApp?.platform ?? 'unknown',
       version: webApp?.version ?? 'unknown',
       startParam: webApp?.initDataUnsafe?.start_param ?? '',
@@ -65,6 +97,24 @@ export default function DebugPage() {
                 <strong>inTelegram:</strong>{' '}
                 <span style={{ color: debugInfo.inTelegram ? '#28a745' : '#dc3545' }}>
                   {String(debugInfo.inTelegram)}
+                </span>
+              </div>
+              <div>
+                <strong>hasWebAppObject:</strong>{' '}
+                <span style={{ color: debugInfo.hasWebAppObject ? '#28a745' : '#dc3545' }}>
+                  {String(debugInfo.hasWebAppObject)}
+                </span>
+              </div>
+              <div>
+                <strong>hasWebviewProxy:</strong>{' '}
+                <span style={{ color: debugInfo.hasWebviewProxy ? '#28a745' : '#dc3545' }}>
+                  {String(debugInfo.hasWebviewProxy)}
+                </span>
+              </div>
+              <div>
+                <strong>hasTgWebAppDataInUrl:</strong>{' '}
+                <span style={{ color: debugInfo.hasTgWebAppDataInUrl ? '#28a745' : '#dc3545' }}>
+                  {String(debugInfo.hasTgWebAppDataInUrl)}
                 </span>
               </div>
               <div>
