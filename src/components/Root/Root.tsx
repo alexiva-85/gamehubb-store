@@ -20,7 +20,13 @@ import { isTelegramWebApp } from '@/lib/telegram/isTelegramEnv';
 import './styles.css';
 
 function RootInner({ children }: PropsWithChildren) {
-  const lp = useLaunchParams();
+  let lp;
+  try {
+    lp = useLaunchParams();
+  } catch (e) {
+    // Fallback if launch params are not available
+    lp = { tgWebAppPlatform: 'base' } as any;
+  }
 
   const isDark = useSignal(miniApp.isDark);
   const initDataUser = useSignal(initData.user);
