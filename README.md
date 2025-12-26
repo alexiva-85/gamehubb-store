@@ -159,6 +159,24 @@ This template has been extended with a simple shop, Robokassa payments integrati
   - **Provider selection**: Controlled via `FULFILLMENT_PROVIDER` environment variable (`mock` or `digiflazz`).
   - See `src/lib/fulfillment/README.md` for detailed documentation.
 
+### Health Check Endpoints
+
+The application provides feature-specific health check endpoints to diagnose environment variable configuration:
+
+- **`GET /api/health/payments`** - Checks Robokassa payment configuration
+  ```bash
+  curl https://your-domain.com/api/health/payments
+  ```
+  Returns: `{ status: "ok"|"warn", feature: "payments", env: {...}, missingRequired: [], timestamp: "..." }`
+
+- **`GET /api/health/telegram`** - Checks Telegram bot configuration
+  ```bash
+  curl https://your-domain.com/api/health/telegram
+  ```
+  Returns: `{ status: "ok"|"warn", feature: "telegram", env: {...}, missingRequired: [], timestamp: "..." }`
+
+All endpoints return only presence flags (`present: boolean`) for environment variables, never exposing actual values.
+
 ### Environment variables
 
 Create a `.env` file (do not commit it to git) and configure:
