@@ -36,3 +36,11 @@ export const prisma = new Proxy({} as GeneratedPrismaClient, {
   },
 });
 
+// Type helper for transaction callback parameter
+// Based on Prisma's internal TransactionClient type: Omit<PrismaClient, ITXClientDenyList>
+// We use Omit to exclude methods that shouldn't be available in transactions
+export type PrismaTransactionClient = Omit<
+  GeneratedPrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+

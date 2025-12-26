@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { prisma } from '@/lib/prisma';
+import { prisma, type PrismaTransactionClient } from '@/lib/prisma';
 import { requireTelegramUser } from '@/lib/telegram';
 import { initPayment } from '@/lib/robokassa';
 
@@ -81,8 +81,7 @@ export async function POST(req: NextRequest) {
   const currency = products[0]?.currency ?? 'RUB';
 
   // 1. Create order and order items.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const order = await prisma.$transaction(async (tx: any) => {
+  const order = await prisma.$transaction(async (tx: PrismaTransactionClient) => {
     const createdOrder = await tx.order.create({
       data: {
         tgUserId: user.id,
