@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Some products are not available' }, { status: 400 });
   }
 
-  const productsById = new Map(products.map((p) => [p.id, p]));
+  const productsById = new Map(products.map((p: { id: number; name: string; priceCents: number; currency: string; isActive: boolean }) => [p.id, p]));
 
-  const totalKopeks = normalizedItems.reduce((sum, item) => {
+  const totalKopeks = normalizedItems.reduce((sum: number, item: { productId: number; qty: number }) => {
     const product = productsById.get(item.productId);
     if (!product) return sum;
     return sum + product.priceCents * item.qty;
