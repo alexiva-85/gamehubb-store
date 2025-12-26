@@ -1,6 +1,7 @@
 'use client';
 
 import { type PropsWithChildren, createContext, useContext, useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 import { OutsideTelegram } from '@/components/OutsideTelegram';
@@ -36,11 +37,21 @@ export function useAppearance() {
  * TelegramApp монтируется ТОЛЬКО внутри Telegram, чтобы избежать вызовов Telegram API вне Mini App.
  */
 export function Providers({ children }: PropsWithChildren) {
+  const pathname = usePathname();
   const [appearance, setAppearance] = useState<'light' | 'dark'>('light');
   const [platform, setPlatform] = useState<'ios' | 'base'>('base');
   const didMount = useDidMount();
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
   const [useMockMode, setUseMockMode] = useState(false);
+
+  // Whitelist путей, которые обходят Telegram guard
+  // /api/health* - это API routes (не проходят через Providers), но на всякий случай оставляем
+  const isBypassed = pathname === '/debug' || pathname.startsWith('/api/health');
+
+  // Если путь в whitelist - возвращаем children без проверок Telegram
+  if (isBypassed) {
+    return <>{children}</>;
+  }
 
   // Проверяем окружение только после монтирования на клиенте
   useEffect(() => {
