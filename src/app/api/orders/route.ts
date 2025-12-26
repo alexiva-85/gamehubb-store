@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
 import { requireTelegramUser } from '@/lib/telegram';
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
   const currency = products[0]?.currency ?? 'RUB';
 
   // 1. Create order and order items.
-  const order = await prisma.$transaction(async (tx) => {
+  const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const createdOrder = await tx.order.create({
       data: {
         tgUserId: user.id,
