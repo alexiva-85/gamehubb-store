@@ -1,0 +1,35 @@
+{
+  "node": {
+    "7f2faf0a5a4257a52ee7fe09cfae9017f9d53d1f85": {
+      "workers": {
+        "app/catalog/page": {
+          "moduleId": "[project]/.next-internal/server/app/catalog/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/core/i18n/locale.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        }
+      },
+      "layer": {
+        "app/catalog/page": "action-browser"
+      },
+      "exportedName": "setLocale",
+      "filename": "src/core/i18n/locale.ts"
+    },
+    "7f346657bbc9ef25be8ea0fb9751db912731c842a5": {
+      "workers": {
+        "app/catalog/page": {
+          "moduleId": "[project]/.next-internal/server/app/catalog/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/core/i18n/locale.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        }
+      },
+      "layer": {
+        "app/catalog/page": "rsc"
+      },
+      "exportedName": "getLocale",
+      "filename": "src/core/i18n/locale.ts"
+    }
+  },
+  "edge": {}
+}

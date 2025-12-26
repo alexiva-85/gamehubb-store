@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../src/app/error.tsx"],"sourcesContent":["'use client';\n\nimport { ErrorPage } from '@/components/ErrorPage';\n\nexport default ErrorPage;\n"],"names":[],"mappings":"6CAEA,AAEe,EAFf,CAAA,CAAA,OAEe,SAAS"}

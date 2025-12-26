@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/aleksandrivashchenko/Desktop/MVP/.next-internal/server/app/catalog/page/actions.js%20%28server%20actions%20loader%29"],"sourcesContent":["export {setLocale as '7f2faf0a5a4257a52ee7fe09cfae9017f9d53d1f85'} from 'ACTIONS_MODULE0'\nexport {getLocale as '7f346657bbc9ef25be8ea0fb9751db912731c842a5'} from 'ACTIONS_MODULE0'\nexport {setLocale as '7f2faf0a5a4257a52ee7fe09cfae9017f9d53d1f85'} from 'ACTIONS_MODULE0'\n"],"names":[],"mappings":";AAAA"}}]
+}

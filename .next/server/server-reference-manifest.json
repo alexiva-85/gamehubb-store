@@ -1,0 +1,176 @@
+{
+  "node": {
+    "7f21a5b47e9d02d267a88e4c0a7df47a1c363eaf29": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 57109,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/cart/page": {
+          "moduleId": 12729,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/catalog/page": {
+          "moduleId": 58267,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/checkout/page": {
+          "moduleId": 45713,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/init-data/page": {
+          "moduleId": 94211,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/launch-params/page": {
+          "moduleId": 21352,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/oferta/page": {
+          "moduleId": 38547,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/orders/[id]/page": {
+          "moduleId": 3856,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/page": {
+          "moduleId": 25402,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/theme-params/page": {
+          "moduleId": 5051,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/ton-connect/page": {
+          "moduleId": 58821,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "rsc",
+        "app/cart/page": "rsc",
+        "app/catalog/page": "rsc",
+        "app/checkout/page": "rsc",
+        "app/init-data/page": "rsc",
+        "app/launch-params/page": "rsc",
+        "app/oferta/page": "rsc",
+        "app/orders/[id]/page": "rsc",
+        "app/page": "rsc",
+        "app/theme-params/page": "rsc",
+        "app/ton-connect/page": "rsc"
+      },
+      "filename": "src/core/i18n/locale.ts",
+      "exportedName": "getLocale"
+    },
+    "7fb7f6be81d48cc435bb9660a47329c41922398421": {
+      "workers": {
+        "app/_not-found/page": {
+          "moduleId": 57109,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/cart/page": {
+          "moduleId": 12729,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/catalog/page": {
+          "moduleId": 58267,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/checkout/page": {
+          "moduleId": 45713,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/init-data/page": {
+          "moduleId": 94211,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/launch-params/page": {
+          "moduleId": 21352,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/oferta/page": {
+          "moduleId": 38547,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/orders/[id]/page": {
+          "moduleId": 3856,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/page": {
+          "moduleId": 25402,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/theme-params/page": {
+          "moduleId": 5051,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/ton-connect/page": {
+          "moduleId": 58821,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        }
+      },
+      "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/cart/page": "action-browser",
+        "app/catalog/page": "action-browser",
+        "app/checkout/page": "action-browser",
+        "app/init-data/page": "action-browser",
+        "app/launch-params/page": "action-browser",
+        "app/oferta/page": "action-browser",
+        "app/orders/[id]/page": "action-browser",
+        "app/page": "action-browser",
+        "app/theme-params/page": "action-browser",
+        "app/ton-connect/page": "action-browser"
+      },
+      "filename": "src/core/i18n/locale.ts",
+      "exportedName": "setLocale"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "+4SlqKu+HZB8s8SRdQ/MDbukn6lVdmvo4T3Acu64OeY="
+}

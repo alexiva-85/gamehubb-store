@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/public/locales/ru.json"],"sourcesContent":["{\"i18n\":{\"header\":\"Поддержка i18n\",\"footer\":\"Вы можете выбрать другой язык в выпадающем меню.\"}}"],"names":[],"mappings":"AAAA"}},
+    {"offset": {"line": 3, "column": 122}, "map": {"version":3,"sources":[],"names":[],"mappings":"A"}}]
+}

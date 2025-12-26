@@ -1,0 +1,3 @@
+{
+  "/api/payments/robokassa/notification/route": "app/api/payments/robokassa/notification/route.js"
+}

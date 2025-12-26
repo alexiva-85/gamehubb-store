@@ -1,0 +1,21 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/admin/orders/[id]/retry-fulfillment/route": "app/api/admin/orders/[id]/retry-fulfillment/route.js",
+  "/api/orders/[id]/route": "app/api/orders/[id]/route.js",
+  "/api/orders/route": "app/api/orders/route.js",
+  "/api/payments/robokassa/notification/route": "app/api/payments/robokassa/notification/route.js",
+  "/api/payments/tbank/notification/route": "app/api/payments/tbank/notification/route.js",
+  "/api/products/route": "app/api/products/route.js",
+  "/cart/page": "app/cart/page.js",
+  "/catalog/page": "app/catalog/page.js",
+  "/checkout/page": "app/checkout/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/init-data/page": "app/init-data/page.js",
+  "/launch-params/page": "app/launch-params/page.js",
+  "/oferta/page": "app/oferta/page.js",
+  "/orders/[id]/page": "app/orders/[id]/page.js",
+  "/page": "app/page.js",
+  "/theme-params/page": "app/theme-params/page.js",
+  "/ton-connect/page": "app/ton-connect/page.js"
+}

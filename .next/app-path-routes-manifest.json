@@ -1,0 +1,21 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/admin/orders/[id]/retry-fulfillment/route": "/api/admin/orders/[id]/retry-fulfillment",
+  "/api/orders/[id]/route": "/api/orders/[id]",
+  "/api/orders/route": "/api/orders",
+  "/api/payments/robokassa/notification/route": "/api/payments/robokassa/notification",
+  "/api/payments/tbank/notification/route": "/api/payments/tbank/notification",
+  "/api/products/route": "/api/products",
+  "/cart/page": "/cart",
+  "/catalog/page": "/catalog",
+  "/checkout/page": "/checkout",
+  "/favicon.ico/route": "/favicon.ico",
+  "/init-data/page": "/init-data",
+  "/launch-params/page": "/launch-params",
+  "/oferta/page": "/oferta",
+  "/orders/[id]/page": "/orders/[id]",
+  "/page": "/",
+  "/theme-params/page": "/theme-params",
+  "/ton-connect/page": "/ton-connect"
+}
