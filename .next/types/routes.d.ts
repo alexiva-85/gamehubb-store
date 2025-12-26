@@ -5,7 +5,7 @@ type AppRoutes = "/" | "/cart" | "/catalog" | "/checkout" | "/init-data" | "/lau
 type AppRouteHandlerRoutes = "/api/admin/orders/[id]/retry-fulfillment" | "/api/orders" | "/api/orders/[id]" | "/api/payments/robokassa/notification" | "/api/payments/tbank/notification" | "/api/products"
 type PageRoutes = never
 type LayoutRoutes = "/"
-type RedirectRoutes = never
+type RedirectRoutes = "/"
 type RewriteRoutes = never
 type Routes = AppRoutes | PageRoutes | LayoutRoutes | RedirectRoutes | RewriteRoutes | AppRouteHandlerRoutes
 

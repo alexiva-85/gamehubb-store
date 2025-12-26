@@ -1,6 +1,6 @@
 'use client';
 
-import { type PropsWithChildren, useEffect } from 'react';
+import { type PropsWithChildren, useEffect, useState } from 'react';
 import {
   initData,
   miniApp,
@@ -12,8 +12,10 @@ import { AppRoot } from '@telegram-apps/telegram-ui';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorPage } from '@/components/ErrorPage';
+import { OutsideTelegram } from '@/components/OutsideTelegram';
 import { useDidMount } from '@/hooks/useDidMount';
 import { setLocale } from '@/core/i18n/locale';
+import { isTelegramWebApp } from '@/lib/telegram/isTelegramEnv';
 
 import './styles.css';
 
@@ -47,6 +49,25 @@ export function Root(props: PropsWithChildren) {
   // the Server Side Rendering. That's why we are showing loader on the server
   // side.
   const didMount = useDidMount();
+  const [useMockMode, setUseMockMode] = useState(false);
+
+  // Check if we're in Telegram environment
+  const isTelegram = isTelegramWebApp();
+
+  // If not in Telegram and mock mode is not enabled, show fallback
+  if (didMount && !isTelegram && !useMockMode) {
+    return (
+      <ErrorBoundary fallback={ErrorPage}>
+        <OutsideTelegram
+          onMockMode={() => {
+            setUseMockMode(true);
+            // Reload page to apply mock mode
+            window.location.reload();
+          }}
+        />
+      </ErrorBoundary>
+    );
+  }
 
   return didMount ? (
     <ErrorBoundary fallback={ErrorPage}>

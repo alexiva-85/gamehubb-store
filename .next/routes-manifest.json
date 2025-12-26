@@ -11,6 +11,12 @@
       "priority": true,
       "statusCode": 308,
       "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    },
+    {
+      "source": "/",
+      "destination": "/catalog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/(?:/)?$"
     }
   ],
   "headers": [],
