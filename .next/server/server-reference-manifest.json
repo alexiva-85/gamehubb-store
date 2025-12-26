@@ -26,6 +26,12 @@
           "exportedName": "getLocale",
           "filename": "src/core/i18n/locale.ts"
         },
+        "app/debug/page": {
+          "moduleId": 86125,
+          "async": false,
+          "exportedName": "getLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
         "app/init-data/page": {
           "moduleId": 94211,
           "async": false,
@@ -74,6 +80,7 @@
         "app/cart/page": "rsc",
         "app/catalog/page": "rsc",
         "app/checkout/page": "rsc",
+        "app/debug/page": "rsc",
         "app/init-data/page": "rsc",
         "app/launch-params/page": "rsc",
         "app/oferta/page": "rsc",
@@ -107,6 +114,12 @@
         },
         "app/checkout/page": {
           "moduleId": 45713,
+          "async": false,
+          "exportedName": "setLocale",
+          "filename": "src/core/i18n/locale.ts"
+        },
+        "app/debug/page": {
+          "moduleId": 86125,
           "async": false,
           "exportedName": "setLocale",
           "filename": "src/core/i18n/locale.ts"
@@ -159,6 +172,7 @@
         "app/cart/page": "action-browser",
         "app/catalog/page": "action-browser",
         "app/checkout/page": "action-browser",
+        "app/debug/page": "action-browser",
         "app/init-data/page": "action-browser",
         "app/launch-params/page": "action-browser",
         "app/oferta/page": "action-browser",

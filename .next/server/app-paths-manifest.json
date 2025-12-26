@@ -13,6 +13,7 @@
   "/cart/page": "app/cart/page.js",
   "/catalog/page": "app/catalog/page.js",
   "/checkout/page": "app/checkout/page.js",
+  "/debug/page": "app/debug/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/init-data/page": "app/init-data/page.js",
   "/launch-params/page": "app/launch-params/page.js",

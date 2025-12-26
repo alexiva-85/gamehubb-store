@@ -13,6 +13,7 @@
   "/cart/page": "/cart",
   "/catalog/page": "/catalog",
   "/checkout/page": "/checkout",
+  "/debug/page": "/debug",
   "/favicon.ico/route": "/favicon.ico",
   "/init-data/page": "/init-data",
   "/launch-params/page": "/launch-params",

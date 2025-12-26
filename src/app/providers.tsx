@@ -43,20 +43,35 @@ export function Providers({ children }: PropsWithChildren) {
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
   const [useMockMode, setUseMockMode] = useState(false);
 
-  // Проверяем окружение только после монтирования
+  // Проверяем окружение только после монтирования на клиенте
   useEffect(() => {
-    if (didMount) {
-      setIsTelegram(isTelegramMiniApp());
+    if (!didMount) {
+      return;
     }
+
+    // Используем window.Telegram?.WebApp как источник правды
+    // Проверка выполняется ТОЛЬКО на клиенте
+    const tg = (typeof window !== 'undefined' ? (window as any).Telegram : null);
+    const webApp = tg?.WebApp;
+    const inTelegram = Boolean(webApp);
+
+    setIsTelegram(inTelegram);
   }, [didMount]);
 
   // Пока не определили окружение - показываем загрузку
   if (!didMount || isTelegram === null) {
-    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>;
+    return (
+      <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+        Checking Telegram…
+      </div>
+    );
   }
 
+  // Проверяем mock mode из env
+  const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
+
   // Вне Telegram показываем OutsideTelegram (без AppRoot и без Telegram SDK)
-  if (!isTelegram && !useMockMode) {
+  if (!isTelegram && !useMockMode && !allowMock) {
     return (
       <ErrorBoundary fallback={ErrorPage}>
         <OutsideTelegram
@@ -71,8 +86,22 @@ export function Providers({ children }: PropsWithChildren) {
 
   // Внутри Telegram (или в mock mode) - монтируем TelegramApp
   // TelegramApp содержит AppRoot и всю Telegram-логику
+  const isMockMode = useMockMode || allowMock;
+
   return (
     <AppearanceContext.Provider value={{ appearance, platform, setAppearance, setPlatform }}>
+      {isMockMode && !isTelegram && (
+        <div style={{
+          padding: '8px 16px',
+          backgroundColor: '#fff3cd',
+          borderBottom: '1px solid #ffc107',
+          textAlign: 'center',
+          fontSize: '14px',
+          color: '#856404',
+        }}>
+          ⚠️ Mock mode (preview)
+        </div>
+      )}
       <TelegramApp>{children}</TelegramApp>
     </AppearanceContext.Provider>
   );
