@@ -44,7 +44,7 @@ async function main() {
     select: { id: true },
   });
 
-  const productIds = createdProducts.map((p) => p.id);
+  const productIds = createdProducts.map((p: { id: number }) => p.id);
 
   console.log(`✅ Seeded ${products.count} products`);
   console.log(`Product IDs: ${productIds.join(', ')}`);
