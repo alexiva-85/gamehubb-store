@@ -8,7 +8,6 @@ import {
   useSignal,
 } from '@tma.js/sdk-react';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
-import { AppRoot } from '@telegram-apps/telegram-ui';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorPage } from '@/components/ErrorPage';
@@ -16,35 +15,32 @@ import { OutsideTelegram } from '@/components/OutsideTelegram';
 import { useDidMount } from '@/hooks/useDidMount';
 import { setLocale } from '@/core/i18n/locale';
 import { isTelegramWebApp } from '@/lib/telegram/isTelegramEnv';
+import { useAppearance } from '@/app/providers';
 
 import './styles.css';
 
-type RootInnerProps = PropsWithChildren<{
-  onAppearanceChange?: (appearance: 'light' | 'dark') => void;
-  onPlatformChange?: (platform: 'ios' | 'base') => void;
-}>;
-
-function RootInner({ children, onAppearanceChange, onPlatformChange }: RootInnerProps) {
+function RootInner({ children }: PropsWithChildren) {
   // These hooks may throw if SDK is not initialized, but ErrorBoundary will catch
   const lp = useLaunchParams();
   const isDark = useSignal(miniApp.isDark);
   const initDataUser = useSignal(initData.user);
+  const { setAppearance, setPlatform } = useAppearance();
 
   // Set the user locale.
   useEffect(() => {
     initDataUser && setLocale(initDataUser.language_code);
   }, [initDataUser]);
 
-  // Update appearance and platform in parent
+  // Update appearance and platform in Providers
   useEffect(() => {
     const appearance = isDark ? 'dark' : 'light';
-    onAppearanceChange?.(appearance);
-  }, [isDark, onAppearanceChange]);
+    setAppearance(appearance);
+  }, [isDark, setAppearance]);
 
   useEffect(() => {
     const platform = ['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base';
-    onPlatformChange?.(platform);
-  }, [lp.tgWebAppPlatform, onPlatformChange]);
+    setPlatform(platform);
+  }, [lp.tgWebAppPlatform, setPlatform]);
 
   return (
     <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
@@ -60,8 +56,6 @@ export function Root(props: PropsWithChildren) {
   const didMount = useDidMount();
   const [useMockMode, setUseMockMode] = useState(false);
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
-  const [appearance, setAppearance] = useState<'light' | 'dark'>('light');
-  const [platform, setPlatform] = useState<'ios' | 'base'>('base');
 
   // Check if we're in Telegram environment only after mount
   useEffect(() => {
@@ -70,40 +64,29 @@ export function Root(props: PropsWithChildren) {
     }
   }, [didMount]);
 
-  // Handlers to update appearance and platform from RootInner
-  const handleAppearanceChange = (appearance: 'light' | 'dark') => {
-    setAppearance(appearance);
-  };
+  // AppRoot is now in Providers, so we don't need it here
+  // All TGUI components are already wrapped by AppRoot from Providers
+  if (!didMount || isTelegram === null) {
+    return <div className="root__loading">Loading</div>;
+  }
 
-  const handlePlatformChange = (platform: 'ios' | 'base') => {
-    setPlatform(platform);
-  };
+  if (!isTelegram && !useMockMode) {
+    return (
+      <ErrorBoundary fallback={ErrorPage}>
+        <OutsideTelegram
+          onMockMode={() => {
+            setUseMockMode(true);
+            // Reload page to apply mock mode
+            window.location.reload();
+          }}
+        />
+      </ErrorBoundary>
+    );
+  }
 
-  // AppRoot must wrap everything to prevent TGUI errors
-  // It should be the outermost container for all TGUI components
   return (
-    <AppRoot appearance={appearance} platform={platform}>
-      {!didMount || isTelegram === null ? (
-        <div className="root__loading">Loading</div>
-      ) : !isTelegram && !useMockMode ? (
-        <ErrorBoundary fallback={ErrorPage}>
-          <OutsideTelegram
-            onMockMode={() => {
-              setUseMockMode(true);
-              // Reload page to apply mock mode
-              window.location.reload();
-            }}
-          />
-        </ErrorBoundary>
-      ) : (
-        <ErrorBoundary fallback={ErrorPage}>
-          <RootInner
-            {...props}
-            onAppearanceChange={handleAppearanceChange}
-            onPlatformChange={handlePlatformChange}
-          />
-        </ErrorBoundary>
-      )}
-    </AppRoot>
+    <ErrorBoundary fallback={ErrorPage}>
+      <RootInner {...props} />
+    </ErrorBoundary>
   );
 }
