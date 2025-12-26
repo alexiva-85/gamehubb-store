@@ -2,6 +2,7 @@
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
   "/api/admin/orders/[id]/retry-fulfillment/route": "/api/admin/orders/[id]/retry-fulfillment",
+  "/api/health/route": "/api/health",
   "/api/orders/[id]/route": "/api/orders/[id]",
   "/api/orders/route": "/api/orders",
   "/api/payments/robokassa/notification/route": "/api/payments/robokassa/notification",

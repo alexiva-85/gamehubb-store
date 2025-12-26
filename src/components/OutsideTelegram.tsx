@@ -12,8 +12,8 @@ type OutsideTelegramProps = {
  */
 export function OutsideTelegram({ onMockMode }: OutsideTelegramProps) {
   const [showMock, setShowMock] = useState(false);
-  const botUrl = process.env.NEXT_PUBLIC_TG_BOT_URL;
-  const allowMock = process.env.NEXT_PUBLIC_ALLOW_TG_MOCK === 'true';
+  const botUrl = process.env.NEXT_PUBLIC_TG_BOT_URL || '';
+  const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
 
   const handleMockMode = () => {
     setShowMock(true);

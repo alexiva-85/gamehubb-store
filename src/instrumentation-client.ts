@@ -6,7 +6,7 @@ import { isTelegramMiniApp } from './lib/telegram/env';
 // Проверяем окружение ДО любых вызовов Telegram API
 if (typeof window !== 'undefined') {
   const isTelegram = isTelegramMiniApp();
-  const allowMock = process.env.NEXT_PUBLIC_ALLOW_TG_MOCK === 'true';
+  const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
 
   // Инициализация Telegram SDK происходит только внутри TelegramApp компонента
   // Здесь мы только проверяем окружение и решаем, нужно ли инициализировать SDK

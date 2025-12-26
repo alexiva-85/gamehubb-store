@@ -4,7 +4,7 @@ import { isTelegramMiniApp } from './lib/telegram/env';
 // It is important, to mock the environment only for development purposes. When building the
 // application, the code inside will be tree-shaken, so you will not see it in your final bundle.
 export async function mockEnv(): Promise<void> {
-  const allowMock = process.env.NEXT_PUBLIC_ALLOW_TG_MOCK === 'true';
+  const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
   const isDev = process.env.NODE_ENV === 'development';
   
   // Only mock in development OR if explicitly allowed via env
