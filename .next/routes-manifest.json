@@ -77,6 +77,18 @@
       "namedRegex": "^/api/health(?:/)?$"
     },
     {
+      "page": "/api/health/payments",
+      "regex": "^/api/health/payments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/health/payments(?:/)?$"
+    },
+    {
+      "page": "/api/health/telegram",
+      "regex": "^/api/health/telegram(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/health/telegram(?:/)?$"
+    },
+    {
       "page": "/api/orders",
       "regex": "^/api/orders(?:/)?$",
       "routeKeys": {},

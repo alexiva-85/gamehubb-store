@@ -1,32 +1,19 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Core health check endpoint that returns environment variable status.
- * Checks: Database (DATABASE_URL, DIRECT_URL) and APP_BASE_URL.
- * Useful for diagnosing missing env vars on Vercel.
+ * Payments feature health check endpoint.
+ * Checks: Robokassa required credentials and optional settings.
  */
 export async function GET() {
   const requiredEnvVars = [
-    'DATABASE_URL',
-    'DIRECT_URL',
-    'APP_BASE_URL',
-  ] as const;
-
-  const optionalEnvVars = [
-    'TG_BOT_TOKEN',
     'ROBOKASSA_MERCHANT_LOGIN',
     'ROBOKASSA_PASSWORD1',
     'ROBOKASSA_PASSWORD2',
-    'ADMIN_KEY',
+  ] as const;
+
+  const optionalEnvVars = [
     'ROBOKASSA_TEST_MODE',
     'ROBOKASSA_API_BASE_URL',
-    'FULFILLMENT_PROVIDER',
-    'DIGIFLAZZ_API_KEY',
-    'DIGIFLAZZ_USERNAME',
-    'DIGIFLAZZ_BASE_URL',
-    'NEXT_PUBLIC_TG_BOT_URL',
-    'NEXT_PUBLIC_ALLOW_TG_MOCK',
-    'NEXT_PUBLIC_SUPPORT_BOT_USERNAME',
   ] as const;
 
   const missingRequired: string[] = [];
