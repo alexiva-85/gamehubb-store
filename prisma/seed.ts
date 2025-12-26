@@ -3,6 +3,7 @@
 // Uses unified prisma client from src/lib/prismaClient.ts via relative path.
 
 import { prisma } from '../src/lib/prismaClient';
+import type { Product } from '@prisma/client';
 
 async function main() {
   // Clear existing data
@@ -43,7 +44,7 @@ async function main() {
     orderBy: { id: 'asc' },
   });
 
-  const productIds = createdProducts.map((p) => p.id);
+  const productIds = createdProducts.map((p: Product) => p.id);
 
   console.log(`✅ Seeded ${products.count} products`);
   console.log(`Product IDs: ${productIds.join(', ')}`);
