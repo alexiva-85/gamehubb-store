@@ -10,7 +10,7 @@ export async function GET() {
     });
 
     return NextResponse.json(
-      products.map((p) => ({
+      products.map((p: { id: number; name: string; description: string | null; priceCents: number; currency: string; isActive: boolean; imageUrl: string | null }) => ({
         id: p.id,
         title: p.name,
         description: p.description,

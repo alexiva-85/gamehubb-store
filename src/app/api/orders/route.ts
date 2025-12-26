@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Items are required' }, { status: 400 });
   }
 
-  const normalizedItems = body.items.map((item) => ({
+  const normalizedItems = body.items.map((item: OrderItemInput) => ({
     productId: Number(item.productId),
     qty: Number(item.qty),
   }));
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         currency,
         provider: 'ROBOKASSA',
         items: {
-          create: normalizedItems.map((item) => {
+          create: normalizedItems.map((item: { productId: number; qty: number }) => {
             const product = productsById.get(item.productId)!;
             return {
               productId: product.id,
