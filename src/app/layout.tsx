@@ -20,13 +20,11 @@ export default async function RootLayout({ children }: PropsWithChildren) {
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head>
+      <body>
         <Script
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
-      </head>
-      <body>
         <I18nProvider>
           <Providers>{children}</Providers>
         </I18nProvider>
