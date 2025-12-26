@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 /**
  * Core health check endpoint that returns environment variable status.
  * Checks: Database (DATABASE_URL, DIRECT_URL), APP_BASE_URL, and TG_BOT_TOKEN.
+ * Robokassa variables are optional (checked in /api/health/payments).
  * Useful for diagnosing missing env vars on Vercel.
  */
 export async function GET() {
