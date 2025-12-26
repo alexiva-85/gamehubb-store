@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     qty: Number(item.qty),
   }));
 
-  if (normalizedItems.some((i) => !Number.isFinite(i.productId) || i.productId <= 0 || i.qty <= 0)) {
+  if (normalizedItems.some((i: { productId: number; qty: number }) => !Number.isFinite(i.productId) || i.productId <= 0 || i.qty <= 0)) {
     return NextResponse.json({ error: 'Invalid items' }, { status: 400 });
   }
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const productIds = [...new Set(normalizedItems.map((i) => i.productId))];
+  const productIds = [...new Set(normalizedItems.map((i: { productId: number; qty: number }) => i.productId))];
 
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, isActive: true },
@@ -56,7 +56,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Some products are not available' }, { status: 400 });
   }
 
-  const productsById = new Map(products.map((p: { id: number; name: string; priceCents: number; currency: string; isActive: boolean }) => [p.id, p]));
+  type ProductType = { id: number; name: string; priceCents: number; currency: string; isActive: boolean };
+  const productsById = new Map<number, ProductType>(
+    products.map((p: ProductType) => [p.id, p])
+  );
 
   const totalKopeks = normalizedItems.reduce((sum: number, item: { productId: number; qty: number }) => {
     const product = productsById.get(item.productId);

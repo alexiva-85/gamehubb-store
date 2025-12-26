@@ -25,7 +25,7 @@ export async function processOrderFulfillment(orderId: number): Promise<void> {
   // Выполняем fulfillment
   const fulfillmentResult = await fulfillOrder(
     orderId,
-    order.items.map((item) => ({
+    order.items.map((item: { productId: number; quantity: number }) => ({
       productId: item.productId,
       quantity: item.quantity,
     })),
@@ -36,8 +36,8 @@ export async function processOrderFulfillment(orderId: number): Promise<void> {
   const lastError = fulfillmentResult.success
     ? null
     : fulfillmentResult.results
-        .filter((r) => !r.result.success)
-        .map((r) => r.result.error || 'Unknown error')
+        .filter((r: { productId: number; result: { success: boolean; error?: string } }) => !r.result.success)
+        .map((r: { productId: number; result: { success: boolean; error?: string } }) => r.result.error || 'Unknown error')
         .join('; ');
 
   await prisma.order.update({

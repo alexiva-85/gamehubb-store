@@ -44,7 +44,7 @@ export async function fulfillOrder(
   const fulfillmentProvider = provider || getFulfillmentProvider();
 
   const results = await Promise.allSettled(
-    items.map(async (item) => {
+    items.map(async (item: { productId: number; quantity: number }) => {
       const result = await fulfillmentProvider.fulfill({
         orderId,
         productId: item.productId,
@@ -54,7 +54,7 @@ export async function fulfillOrder(
     }),
   );
 
-  const fulfilledResults = results.map((r, index) => {
+  const fulfilledResults = results.map((r: PromiseSettledResult<{ productId: number; result: Awaited<ReturnType<IFulfillmentProvider['fulfill']>> }>, index: number) => {
     if (r.status === 'fulfilled') {
       return r.value;
     } else {
@@ -68,7 +68,7 @@ export async function fulfillOrder(
     }
   });
 
-  const allSucceeded = fulfilledResults.every((r) => r.result.success);
+  const allSucceeded = fulfilledResults.every((r: { productId: number; result: Awaited<ReturnType<IFulfillmentProvider['fulfill']>> }) => r.result.success);
   const payload = {
     orderId,
     provider: fulfillmentProvider.name,
