@@ -134,6 +134,137 @@ Check out
 the [Next.js deployment documentation](https://nextjs.org/docs/deployment) for
 more details.
 
+## Payments (Robokassa) & Fulfillment
+
+This template has been extended with a simple shop, Robokassa payments integration, and fulfillment system.
+
+- **Backend**
+  - **Prisma models**: `Product`, `Order`, `OrderItem`, `PaymentNotificationLog`.
+  - **API routes**:
+    - `GET /api/products` – returns active products.
+    - `POST /api/orders` – creates an order for the current Telegram user and initializes a Robokassa payment.
+    - `GET /api/orders/[id]` – returns order status, items, and fulfillment status (only for the owner).
+    - `POST /api/admin/orders/[id]/retry-fulfillment` – admin endpoint to manually retry fulfillment (requires `x-admin-key` header).
+    - `POST /api/payments/robokassa/notification` – webhook for Robokassa payment status notifications.
+- **Telegram auth**
+  - Server-side validation of `Telegram.WebApp.initData` is required for creating and reading orders.
+  - Init data is expected in the `x-telegram-init-data` HTTP header and is validated with `@tma.js/init-data-node`.
+- **Fulfillment system**
+  - **Provider interface**: Extensible fulfillment provider system (`src/lib/fulfillment/types.ts`).
+  - **Mock provider**: Development/testing provider that simulates order fulfillment (`src/lib/fulfillment/mock.ts`).
+  - **Digiflazz provider**: Placeholder for Digiflazz API integration (`src/lib/fulfillment/digiflazz.ts`).
+  - **Automatic fulfillment**: After payment confirmation, orders are automatically fulfilled using the configured provider.
+  - **Idempotent fulfillment**: Uses `fulfillmentStatus` (NOT_STARTED/PENDING/SUCCESS/FAILED) to prevent duplicate processing.
+  - **Retry mechanism**: Failed fulfillments can be retried via admin endpoint.
+  - **Provider selection**: Controlled via `FULFILLMENT_PROVIDER` environment variable (`mock` or `digiflazz`).
+  - See `src/lib/fulfillment/README.md` for detailed documentation.
+
+### Environment variables
+
+Create a `.env` file (do not commit it to git) and configure:
+
+- `TG_BOT_TOKEN` – token of your Telegram bot (used to validate initData).
+- `ROBOKASSA_MERCHANT_LOGIN` – Robokassa merchant login (get from Robokassa dashboard).
+- `ROBOKASSA_PASSWORD1` – Robokassa password #1 (used for signing payment requests).
+- `ROBOKASSA_PASSWORD2` – Robokassa password #2 (used for verifying webhook notifications).
+- `ROBOKASSA_API_BASE_URL` – optional, default is `https://auth.robokassa.ru/Merchant/Index.aspx`.
+- `ROBOKASSA_TEST_MODE` – optional, set to `true` for test mode.
+- `APP_BASE_URL` – base URL of this app, e.g. `https://example.com`, used to build Success/Fail/Notification URLs.
+- `FULFILLMENT_PROVIDER` – fulfillment provider type: `mock` (default) or `digiflazz`.
+- `DIGIFLAZZ_API_KEY` – Digiflazz API key (required if using `digiflazz` provider).
+- `DIGIFLAZZ_USERNAME` – Digiflazz username (required if using `digiflazz` provider).
+- `DIGIFLAZZ_BASE_URL` – optional, default is `https://api.digiflazz.com/v1`.
+- `ADMIN_KEY` – secret key for admin endpoints (required for `/api/admin/*` routes).
+- `NEXT_PUBLIC_SUPPORT_BOT_USERNAME` – optional, username of support bot (default: `support`), used for support button.
+
+### Testing the webhook locally
+
+- Run the app with `pnpm dev` or `pnpm dev:https` and expose it to the internet with a tunneling tool (e.g. `ngrok`).
+- Configure Robokassa in your dashboard so that the Result URL points to:
+  - `https://<your-tunnel-domain>/api/payments/robokassa/notification`
+- Set `ROBOKASSA_TEST_MODE=true` for testing.
+- Make a test payment; you should see order status transitions after Robokassa sends notifications.
+
+## Client flow
+
+- **Telegram initData**
+  - On the client, `Telegram.WebApp.initData` (or `initData` from the URL query during local development) is read by `src/lib/tg.ts:getInitData`.
+  - All requests which require authorization (orders) use the `x-telegram-init-data` header, added automatically by `src/lib/api.ts` when `auth: true` is passed.
+- **Creating an order**
+  - The catalog page (`/catalog`) loads products from `GET /api/products` and allows adding them to a local cart stored in `localStorage` (`src/lib/cart.ts`).
+  - The cart page (`/cart`) shows current items and total, and navigates to `/checkout`.
+  - The checkout page (`/checkout`) calls `POST /api/orders` with `{ items: [{ productId, qty }] }` and `auth: true`, then opens `paymentUrl` using `Telegram.WebApp.openLink` (or `window.open` as a fallback) and redirects to `/orders/[orderId]`.
+- **Order status**
+  - The order status page (`/orders/[id]`) polls `GET /api/orders/[id]` with `auth: true` every 1500 ms until the status becomes `PAID`, `FULFILLED`, or `CANCELED`, and then stops polling.
+  - For `PAID`/`FULFILLED` it shows “Оплата получена” and a button to go back to the catalog; for `401`/`403` it shows a clear error about invalid or foreign `initData`.
+
+> Cart persistence uses `localStorage` key `cart:v1`.
+
+## Testing
+
+### Unit Tests
+
+Run unit tests with Vitest:
+
+```bash
+pnpm test:unit
+```
+
+Tests cover:
+- Cart persistence in `localStorage` (key `cart:v1`)
+- Cart qty rules (qty <= 0 removes items, no negative values)
+- Corrupted JSON handling
+
+### E2E Tests
+
+E2E tests use Playwright and require a test database setup. The `global-setup.ts` script automatically:
+1. Generates Prisma Client (`pnpm prisma:generate`)
+2. Applies database schema (`pnpm prisma migrate deploy` or `db push`)
+3. Seeds test data (`pnpm seed:test`)
+
+Run E2E tests:
+
+```bash
+pnpm test:e2e
+```
+
+This will:
+- Set `NODE_ENV=test` and `TG_INITDATA_BYPASS_FOR_E2E=true` for test environment
+- Automatically set up the test database before running tests
+- Run Playwright tests covering:
+  - Catalog → cart → checkout → order status flow
+  - Double-click protection on checkout
+  - Cart persistence after page reload
+  - Polling stops after terminal order status
+  - Missing initData error handling
+  - Server-side pricing validation
+
+### Manual Test Database Setup
+
+If you need to manually set up the test database:
+
+```bash
+# 1. Generate Prisma Client
+pnpm prisma:generate
+
+# 2. Apply schema (choose one):
+pnpm prisma migrate deploy    # If using migrations
+# OR
+pnpm prisma db push          # If using db push
+
+# 3. Seed test data
+pnpm seed:test
+```
+
+### All Tests
+
+Run both unit and E2E tests:
+
+```bash
+pnpm test:all
+```
+
+
 ## Useful Links
 
 - [Platform documentation](https://docs.telegram-mini-apps.com/)
