@@ -12,6 +12,12 @@ export async function mockEnv(): Promise<void> {
   }
 
   return isTMA('complete').then((isTma) => {
+    // If not in Telegram and mock is not allowed, don't mock
+    if (!isTma && !allowMock) {
+      return;
+    }
+    
+    // Mock if not in Telegram (either dev mode or allowMock is true)
     if (!isTma){ 
       const themeParams = {
         accent_text_color: '#6ab2f2',

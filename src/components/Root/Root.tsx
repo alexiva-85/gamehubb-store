@@ -20,14 +20,8 @@ import { isTelegramWebApp } from '@/lib/telegram/isTelegramEnv';
 import './styles.css';
 
 function RootInner({ children }: PropsWithChildren) {
-  let lp;
-  try {
-    lp = useLaunchParams();
-  } catch (e) {
-    // Fallback if launch params are not available
-    lp = { tgWebAppPlatform: 'base' } as any;
-  }
-
+  // These hooks may throw if SDK is not initialized, but ErrorBoundary will catch
+  const lp = useLaunchParams();
   const isDark = useSignal(miniApp.isDark);
   const initDataUser = useSignal(initData.user);
 
@@ -56,12 +50,22 @@ export function Root(props: PropsWithChildren) {
   // side.
   const didMount = useDidMount();
   const [useMockMode, setUseMockMode] = useState(false);
+  const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
 
-  // Check if we're in Telegram environment
-  const isTelegram = isTelegramWebApp();
+  // Check if we're in Telegram environment only after mount
+  useEffect(() => {
+    if (didMount) {
+      setIsTelegram(isTelegramWebApp());
+    }
+  }, [didMount]);
+
+  // Show loading until we know the environment
+  if (!didMount || isTelegram === null) {
+    return <div className="root__loading">Loading</div>;
+  }
 
   // If not in Telegram and mock mode is not enabled, show fallback
-  if (didMount && !isTelegram && !useMockMode) {
+  if (!isTelegram && !useMockMode) {
     return (
       <ErrorBoundary fallback={ErrorPage}>
         <OutsideTelegram
@@ -75,11 +79,10 @@ export function Root(props: PropsWithChildren) {
     );
   }
 
-  return didMount ? (
+  // In Telegram or mock mode - show normal app
+  return (
     <ErrorBoundary fallback={ErrorPage}>
       <RootInner {...props} />
     </ErrorBoundary>
-  ) : (
-    <div className="root__loading">Loading</div>
   );
 }
