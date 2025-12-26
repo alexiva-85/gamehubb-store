@@ -49,7 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<Params
     fulfillmentStatus: order.fulfillmentStatus,
     fulfillmentAttemptCount: order.fulfillmentAttemptCount,
     fulfillmentLastError: order.fulfillmentLastError,
-    items: order.items.map((item) => ({
+    items: order.items.map((item: { id: number; productId: number; quantity: number; priceCents: number; product: { name: string; imageUrl: string | null } }) => ({
       id: item.id,
       productId: item.productId,
       title: item.product.name,
