@@ -1,0 +1,10 @@
+packages:
+  - "."
+
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - "prisma"
+  - "@swc/core"
+  - "esbuild"
+  - "sharp"
+
