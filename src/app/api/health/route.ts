@@ -2,18 +2,18 @@ import { NextResponse } from 'next/server';
 
 /**
  * Core health check endpoint that returns environment variable status.
- * Checks: Database (DATABASE_URL, DIRECT_URL) and APP_BASE_URL.
+ * Checks: Database (DATABASE_URL, DIRECT_URL), APP_BASE_URL, and TG_BOT_TOKEN.
  * Useful for diagnosing missing env vars on Vercel.
  */
 export async function GET() {
   const requiredEnvVars = [
+    'TG_BOT_TOKEN',
     'DATABASE_URL',
     'DIRECT_URL',
     'APP_BASE_URL',
   ] as const;
 
   const optionalEnvVars = [
-    'TG_BOT_TOKEN',
     'ROBOKASSA_MERCHANT_LOGIN',
     'ROBOKASSA_PASSWORD1',
     'ROBOKASSA_PASSWORD2',
