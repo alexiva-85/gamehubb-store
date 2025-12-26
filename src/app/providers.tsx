@@ -46,12 +46,15 @@ export function Providers({ children }: PropsWithChildren) {
 
   // Whitelist путей, которые обходят Telegram guard
   // Используем pathname из usePathname, с fallback на window.location.pathname для надежности
+  // Проверяем путь как из usePathname, так и из window.location для максимальной надежности
   const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
   const isBypassed = 
     currentPath === '/debug' || 
-    currentPath.startsWith('/api/health');
+    currentPath.startsWith('/api/health') ||
+    (typeof window !== 'undefined' && (window.location.pathname === '/debug' || window.location.pathname.startsWith('/api/health')));
 
   // Если путь в whitelist - возвращаем children без проверок Telegram
+  // Это должно работать даже на сервере, так как проверка пути происходит до всех Telegram-проверок
   if (isBypassed) {
     return <>{children}</>;
   }
