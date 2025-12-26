@@ -43,18 +43,32 @@ export function Providers({ children }: PropsWithChildren) {
   const didMount = useDidMount();
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
   const [useMockMode, setUseMockMode] = useState(false);
+  const [shouldBypass, setShouldBypass] = useState<boolean | null>(null);
 
   // Whitelist путей, которые обходят Telegram guard
-  // Используем pathname из usePathname, с fallback на window.location.pathname для надежности
   // Проверяем путь как из usePathname, так и из window.location для максимальной надежности
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const currentPath = pathname || window.location.pathname;
+    const bypass = 
+      currentPath === '/debug' || 
+      currentPath.startsWith('/api/health') ||
+      window.location.pathname === '/debug' ||
+      window.location.pathname.startsWith('/api/health');
+    setShouldBypass(bypass);
+  }, [pathname]);
+
+  // На сервере или до инициализации - проверяем pathname напрямую
   const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
   const isBypassed = 
+    shouldBypass === true ||
     currentPath === '/debug' || 
     currentPath.startsWith('/api/health') ||
     (typeof window !== 'undefined' && (window.location.pathname === '/debug' || window.location.pathname.startsWith('/api/health')));
 
   // Если путь в whitelist - возвращаем children без проверок Telegram
-  // Это должно работать даже на сервере, так как проверка пути происходит до всех Telegram-проверок
   if (isBypassed) {
     return <>{children}</>;
   }
