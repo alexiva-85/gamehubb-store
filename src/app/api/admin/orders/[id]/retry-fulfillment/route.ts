@@ -108,7 +108,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Param
           fulfillmentAttemptCount: { increment: 1 },
         },
       })
-      .catch((updateError) => {
+      .catch((updateError: unknown) => {
         console.error(`[Admin Retry] Failed to update order ${orderId} status:`, updateError);
       });
   });

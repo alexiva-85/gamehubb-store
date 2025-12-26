@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
                 fulfillmentAttemptCount: { increment: 1 },
               },
             })
-            .catch((updateError) => {
+            .catch((updateError: unknown) => {
               console.error(`[Fulfillment] Failed to update order ${order.id} status:`, updateError);
             });
         });

@@ -127,9 +127,9 @@ export async function POST(req: NextRequest) {
               fulfillmentAttemptCount: { increment: 1 },
             },
           })
-          .catch((updateError) => {
-            console.error(`[Fulfillment] Failed to update order ${order.id} status:`, updateError);
-          });
+            .catch((updateError: unknown) => {
+              console.error(`[Fulfillment] Failed to update order ${order.id} status:`, updateError);
+            });
       });
     } else {
       // Check if it's because of attempt limit
