@@ -45,8 +45,11 @@ export function Providers({ children }: PropsWithChildren) {
   const [useMockMode, setUseMockMode] = useState(false);
 
   // Whitelist путей, которые обходят Telegram guard
-  // /api/health* - это API routes (не проходят через Providers), но на всякий случай оставляем
-  const isBypassed = pathname === '/debug' || pathname.startsWith('/api/health');
+  // Используем pathname из usePathname, с fallback на window.location.pathname для надежности
+  const currentPath = pathname || (typeof window !== 'undefined' ? window.location.pathname : '');
+  const isBypassed = 
+    currentPath === '/debug' || 
+    currentPath.startsWith('/api/health');
 
   // Если путь в whitelist - возвращаем children без проверок Telegram
   if (isBypassed) {
