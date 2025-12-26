@@ -1,8 +1,8 @@
 'use client';
 
-import { backButton } from '@tma.js/sdk-react';
 import { PropsWithChildren, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { isTelegramMiniApp } from '@/lib/telegram/env';
 
 export function Page({ children, back = true }: PropsWithChildren<{
   /**
@@ -13,19 +13,25 @@ export function Page({ children, back = true }: PropsWithChildren<{
 }>) {
   const router = useRouter();
 
+  // Используем backButton только внутри Telegram
   useEffect(() => {
-    if (back) {
-      backButton.show();
-    } else {
-      backButton.hide();
+    if (!isTelegramMiniApp()) {
+      return;
     }
-  }, [back]);
 
-  useEffect(() => {
-    return backButton.onClick(() => {
-      router.back();
+    // Динамически импортируем backButton только если мы в Telegram
+    import('@tma.js/sdk-react').then(({ backButton }) => {
+      if (back) {
+        backButton.show();
+      } else {
+        backButton.hide();
+      }
+
+      return backButton.onClick(() => {
+        router.back();
+      });
     });
-  }, [router]);
+  }, [back, router]);
 
   return <>{children}</>;
 }
