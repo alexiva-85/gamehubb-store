@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       amountKopeks: totalKopeks,
       currency: updatedOrder.currency,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Robokassa init payment failed', error);
 
     await prisma.order.update({

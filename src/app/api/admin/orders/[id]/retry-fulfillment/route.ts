@@ -96,7 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Param
   }
 
   // Запускаем fulfillment асинхронно
-  processOrderFulfillment(orderId).catch((error) => {
+  processOrderFulfillment(orderId).catch((error: unknown) => {
     console.error(`[Admin Retry] Failed to process order ${orderId}:`, error);
     // On error, mark as FAILED
     prisma.order
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Param
         where: { id: orderId },
         data: {
           fulfillmentStatus: 'FAILED',
-          fulfillmentLastError: error.message || 'Unknown error',
+          fulfillmentLastError: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
           fulfillmentAttemptCount: { increment: 1 },
         },
       })

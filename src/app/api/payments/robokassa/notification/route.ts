@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     // Robokassa отправляет данные как application/x-www-form-urlencoded
     const body = await req.text();
     formData = new URLSearchParams(body);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to parse Robokassa notification body:', error);
     return new Response('Bad Request', { status: 400 });
   }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   let notificationParams;
   try {
     notificationParams = parseNotificationParams(formData);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to parse notification parameters:', error);
     return new Response('Bad Request', { status: 400 });
   }
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         }),
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     // Ignore unique constraint violations (same status for same payment)
     console.warn('Failed to insert PaymentNotificationLog', error);
   }
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     if (canStart) {
       // Process fulfillment asynchronously (don't block webhook response)
-      processOrderFulfillment(order.id).catch((error) => {
+      processOrderFulfillment(order.id).catch((error: unknown) => {
         console.error(`[Fulfillment] Failed to process order ${order.id}:`, error);
         // On error, mark as FAILED
         prisma.order
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
             where: { id: order.id },
             data: {
               fulfillmentStatus: 'FAILED',
-              fulfillmentLastError: error.message || 'Unknown error',
+              fulfillmentLastError: (error instanceof Error ? error.message : String(error)) || 'Unknown error',
               fulfillmentAttemptCount: { increment: 1 },
             },
           })

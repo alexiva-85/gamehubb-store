@@ -20,7 +20,7 @@ export async function GET() {
         imageUrl: p.imageUrl,
       })),
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('GET /api/products error', error);
     return NextResponse.json({ error: 'Failed to load products' }, { status: 500 });
   }
