@@ -7,7 +7,6 @@ import { OutsideTelegram } from '@/components/OutsideTelegram';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorPage } from '@/components/ErrorPage';
 import { useDidMount } from '@/hooks/useDidMount';
-import { isTelegramMiniApp } from '@/lib/telegram/env';
 
 // Dynamic import TelegramApp с ssr: false, чтобы код не выполнялся на сервере
 // и не бандлился для путей, где он не нужен
