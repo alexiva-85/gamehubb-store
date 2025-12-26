@@ -19,7 +19,12 @@ import { isTelegramWebApp } from '@/lib/telegram/isTelegramEnv';
 
 import './styles.css';
 
-function RootInner({ children }: PropsWithChildren) {
+type RootInnerProps = PropsWithChildren<{
+  onAppearanceChange?: (appearance: 'light' | 'dark') => void;
+  onPlatformChange?: (platform: 'ios' | 'base') => void;
+}>;
+
+function RootInner({ children, onAppearanceChange, onPlatformChange }: RootInnerProps) {
   // These hooks may throw if SDK is not initialized, but ErrorBoundary will catch
   const lp = useLaunchParams();
   const isDark = useSignal(miniApp.isDark);
@@ -30,16 +35,20 @@ function RootInner({ children }: PropsWithChildren) {
     initDataUser && setLocale(initDataUser.language_code);
   }, [initDataUser]);
 
+  // Update appearance and platform in parent
+  useEffect(() => {
+    const appearance = isDark ? 'dark' : 'light';
+    onAppearanceChange?.(appearance);
+  }, [isDark, onAppearanceChange]);
+
+  useEffect(() => {
+    const platform = ['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base';
+    onPlatformChange?.(platform);
+  }, [lp.tgWebAppPlatform, onPlatformChange]);
+
   return (
     <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
-      <AppRoot
-        appearance={isDark ? 'dark' : 'light'}
-        platform={
-          ['macos', 'ios'].includes(lp.tgWebAppPlatform) ? 'ios' : 'base'
-        }
-      >
-        {children}
-      </AppRoot>
+      {children}
     </TonConnectUIProvider>
   );
 }
@@ -51,6 +60,8 @@ export function Root(props: PropsWithChildren) {
   const didMount = useDidMount();
   const [useMockMode, setUseMockMode] = useState(false);
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
+  const [appearance, setAppearance] = useState<'light' | 'dark'>('light');
+  const [platform, setPlatform] = useState<'ios' | 'base'>('base');
 
   // Check if we're in Telegram environment only after mount
   useEffect(() => {
@@ -59,30 +70,40 @@ export function Root(props: PropsWithChildren) {
     }
   }, [didMount]);
 
-  // Show loading until we know the environment
-  if (!didMount || isTelegram === null) {
-    return <div className="root__loading">Loading</div>;
-  }
+  // Handlers to update appearance and platform from RootInner
+  const handleAppearanceChange = (appearance: 'light' | 'dark') => {
+    setAppearance(appearance);
+  };
 
-  // If not in Telegram and mock mode is not enabled, show fallback
-  if (!isTelegram && !useMockMode) {
-    return (
-      <ErrorBoundary fallback={ErrorPage}>
-        <OutsideTelegram
-          onMockMode={() => {
-            setUseMockMode(true);
-            // Reload page to apply mock mode
-            window.location.reload();
-          }}
-        />
-      </ErrorBoundary>
-    );
-  }
+  const handlePlatformChange = (platform: 'ios' | 'base') => {
+    setPlatform(platform);
+  };
 
-  // In Telegram or mock mode - show normal app
+  // AppRoot must wrap everything to prevent TGUI errors
+  // It should be the outermost container for all TGUI components
   return (
-    <ErrorBoundary fallback={ErrorPage}>
-      <RootInner {...props} />
-    </ErrorBoundary>
+    <AppRoot appearance={appearance} platform={platform}>
+      {!didMount || isTelegram === null ? (
+        <div className="root__loading">Loading</div>
+      ) : !isTelegram && !useMockMode ? (
+        <ErrorBoundary fallback={ErrorPage}>
+          <OutsideTelegram
+            onMockMode={() => {
+              setUseMockMode(true);
+              // Reload page to apply mock mode
+              window.location.reload();
+            }}
+          />
+        </ErrorBoundary>
+      ) : (
+        <ErrorBoundary fallback={ErrorPage}>
+          <RootInner
+            {...props}
+            onAppearanceChange={handleAppearanceChange}
+            onPlatformChange={handlePlatformChange}
+          />
+        </ErrorBoundary>
+      )}
+    </AppRoot>
   );
 }
