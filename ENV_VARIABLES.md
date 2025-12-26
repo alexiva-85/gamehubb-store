@@ -13,8 +13,9 @@
 | Name | Где используется | Обязательна | Дефолт | Примечание |
 |------|-------------------|-------------|--------|------------|
 | `TG_BOT_TOKEN` | `src/lib/telegram.ts:23` | ✅ Да | - | Токен Telegram бота |
-| `DATABASE_URL` | `prisma.config.ts`, `src/lib/prismaClient.ts` | ✅ Да | - | PostgreSQL connection string |
-| `APP_BASE_URL` | `src/app/api/orders/route.ts:74` | ✅ Да | - | Базовый URL приложения для webhook'ов |
+| `DATABASE_URL` | `prisma/schema.prisma`, `prisma.config.ts`, `src/lib/prismaClient.ts` | ✅ Да | - | Supabase Pooler (Transaction), runtime connection string |
+| `DIRECT_URL` | `prisma/schema.prisma` | ✅ Да | - | Supabase Pooler (Session), для миграций/DDL. Direct connection может быть IPv6-only и требовать IPv4 add-on |
+| `APP_BASE_URL` | `src/app/api/orders/route.ts:74` | ✅ Да | - | Базовый URL деплоя на Vercel (для webhook'ов и редиректов) |
 | `ROBOKASSA_MERCHANT_LOGIN` | `src/lib/robokassa.ts:60` | ✅ Да | - | Логин мерчанта Robokassa |
 | `ROBOKASSA_PASSWORD1` | `src/lib/robokassa.ts:61` | ✅ Да | - | Пароль #1 для формирования подписи |
 | `ROBOKASSA_PASSWORD2` | `src/app/api/payments/robokassa/notification/route.ts:31` | ✅ Да | - | Пароль #2 для проверки подписи |
@@ -50,7 +51,8 @@
 
 Для работы API нужны:
 - `TG_BOT_TOKEN`
-- `DATABASE_URL`
+- `DATABASE_URL` (Supabase Pooler для runtime)
+- `DIRECT_URL` (Supabase Pooler для миграций)
 - `APP_BASE_URL`
 - `ROBOKASSA_MERCHANT_LOGIN`
 - `ROBOKASSA_PASSWORD1`

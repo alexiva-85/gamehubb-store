@@ -8,6 +8,7 @@ export async function GET() {
   const requiredEnvVars = [
     'TG_BOT_TOKEN',
     'DATABASE_URL',
+    'DIRECT_URL',
     'APP_BASE_URL',
     'ROBOKASSA_MERCHANT_LOGIN',
     'ROBOKASSA_PASSWORD1',

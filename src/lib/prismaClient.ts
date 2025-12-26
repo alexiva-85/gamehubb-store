@@ -14,8 +14,18 @@ function getPrismaClient(): GeneratedPrismaClient {
     return globalThis.__prisma;
   }
 
-  // Prisma 7 automatically reads DATABASE_URL from environment variables
-  // No need to pass it explicitly - it's configured in prisma.config.ts
+  // Prisma 7: DATABASE_URL and DIRECT_URL are read from environment variables
+  // DATABASE_URL is for runtime (Transaction pooler)
+  // DIRECT_URL is for migrations/DDL (Session pooler)
+  // Prisma Client automatically uses these env vars if they're set
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL is not configured');
+  }
+
+  // Prisma 7 automatically reads DATABASE_URL and DIRECT_URL from environment
+  // No need to pass them explicitly - they're configured via env vars
   const client = new GeneratedPrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
