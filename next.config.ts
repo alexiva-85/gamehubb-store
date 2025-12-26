@@ -12,6 +12,17 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  // Redirect root path to catalog
+  // This works at CDN level on Vercel and is more reliable than redirect() in page.tsx
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/catalog',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

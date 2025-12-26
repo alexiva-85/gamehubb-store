@@ -1,9 +1,10 @@
-import { permanentRedirect } from 'next/navigation';
-
 /**
  * Корневая страница приложения
- * Редиректит на каталог товаров
+ * Редирект настроен в next.config.ts для более надежной работы на Vercel
+ * Этот файл оставлен для совместимости, но редирект происходит на уровне конфигурации
  */
 export default function Home() {
-  permanentRedirect('/catalog');
+  // Редирект настроен в next.config.ts
+  // Это более надежно для Vercel, так как работает на уровне CDN
+  return null;
 }
