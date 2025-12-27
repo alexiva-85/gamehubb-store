@@ -1,22 +1,36 @@
 // This file is normally used for setting up analytics and other
 // services that require one-time initialization on the client.
 
-import { isTelegramMiniApp } from './lib/telegram/env';
-
 // Проверяем окружение ДО любых вызовов Telegram API
+// Полностью отключаем instrumentation вне Telegram, чтобы не загружать bridge
 if (typeof window !== 'undefined') {
-  const isTelegram = isTelegramMiniApp();
-  const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
+  // Используем строгую детекцию Telegram WebView
+  // Импортируем динамически, чтобы не загружать модуль вне Telegram
+  import('./lib/telegram/detect').then(({ detectTelegramEnv }) => {
+    const env = detectTelegramEnv();
 
-  // Инициализация Telegram SDK происходит только внутри TelegramApp компонента
-  // Здесь мы только проверяем окружение и решаем, нужно ли инициализировать SDK
-  if (isTelegram || allowMock) {
+    // Полностью отключаем вне Telegram - не загружаем никакие модули bridge
+    // Инициализация Telegram SDK происходит только внутри TelegramApp компонента
+    // Здесь мы только проверяем окружение и решаем, нужно ли инициализировать SDK
+    // НЕ вызываем retrieveLaunchParams если не в Telegram и не в mock режиме
+    // Запускаем init/retrieveLaunchParams ТОЛЬКО если shouldUseTelegram===true
+    if (!env.shouldUseTelegram) {
+      return;
+    }
+
     // Динамически импортируем инициализацию только если нужно
     import('./core/init').then(({ init }) => {
       import('./mockEnv').then(({ mockEnv }) => {
         import('@tma.js/sdk-react').then(({ retrieveLaunchParams }) => {
           mockEnv().then(() => {
             try {
+              // Дополнительная проверка перед вызовом retrieveLaunchParams
+              // Повторно проверяем shouldUseTelegram на случай изменения окружения
+              const currentEnv = detectTelegramEnv();
+              if (!currentEnv.shouldUseTelegram) {
+                return;
+              }
+
               const launchParams = retrieveLaunchParams();
               const { tgWebAppPlatform: platform } = launchParams;
               const debug =
@@ -37,5 +51,5 @@ if (typeof window !== 'undefined') {
         });
       });
     });
-  }
+  });
 }

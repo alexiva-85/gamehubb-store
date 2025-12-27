@@ -18,3 +18,4 @@ export function Price({ amountKopeks, currency = 'RUB', className }: PriceProps)
 }
 
 
+

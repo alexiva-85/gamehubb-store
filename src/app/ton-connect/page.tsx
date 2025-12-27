@@ -68,7 +68,22 @@ export default function TONConnectPage() {
                 subtitle={wallet.appName}
                 onClick={(e) => {
                   e.preventDefault();
-                  openLink(wallet.aboutUrl);
+                  try {
+                    // Проверяем, что мы в Telegram перед вызовом openLink
+                    const inTelegram = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp;
+                    const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
+                    
+                    if (inTelegram || allowMock) {
+                      openLink(wallet.aboutUrl);
+                    } else {
+                      // Fallback для обычного браузера
+                      window.open(wallet.aboutUrl, '_blank', 'noopener,noreferrer');
+                    }
+                  } catch (error) {
+                    console.warn('Failed to open link via Telegram SDK:', error);
+                    // Fallback для обычного браузера
+                    window.open(wallet.aboutUrl, '_blank', 'noopener,noreferrer');
+                  }
                 }}
               >
                 <Title level="3">{wallet.name}</Title>

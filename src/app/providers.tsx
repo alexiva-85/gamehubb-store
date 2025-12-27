@@ -7,8 +7,10 @@ import dynamic from 'next/dynamic';
 import { OutsideTelegram } from '@/components/OutsideTelegram';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ErrorPage } from '@/components/ErrorPage';
+import { StartParamRouter } from '@/components/StartParamRouter';
 import { useDidMount } from '@/hooks/useDidMount';
-import { isTelegramMiniApp, getTelegramWebApp } from '@/lib/telegram/env';
+import { detectTelegramEnv } from '@/lib/telegram/detect';
+import { getTelegramWebApp } from '@/lib/telegram/env';
 
 // Dynamic import TelegramApp с ssr: false, чтобы код не выполнялся на сервере
 // и не бандлился для путей, где он не нужен
@@ -42,7 +44,7 @@ export function Providers({ children }: PropsWithChildren) {
   const [appearance, setAppearance] = useState<'light' | 'dark'>('light');
   const [platform, setPlatform] = useState<'ios' | 'base'>('base');
   const didMount = useDidMount();
-  const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
+  const [telegramEnv, setTelegramEnv] = useState<ReturnType<typeof detectTelegramEnv> | null>(null);
   const [useMockMode, setUseMockMode] = useState(false);
   const [shouldBypass, setShouldBypass] = useState<boolean | null>(null);
 
@@ -83,11 +85,11 @@ export function Providers({ children }: PropsWithChildren) {
 
     // Даем скрипту Telegram время на инициализацию
     const checkTelegram = () => {
-      const inTelegram = isTelegramMiniApp();
-      setIsTelegram(inTelegram);
+      const env = detectTelegramEnv();
+      setTelegramEnv(env);
 
-      // Если WebApp доступен, вызываем ready() и expand()
-      if (inTelegram) {
+      // Если WebApp доступен и мы в Telegram, вызываем ready() и expand()
+      if (env.shouldUseTelegram && env.hasWebAppObject) {
         const webApp = getTelegramWebApp();
         if (webApp) {
           try {
@@ -109,7 +111,7 @@ export function Providers({ children }: PropsWithChildren) {
   }, [didMount]);
 
   // Пока не определили окружение - показываем загрузку
-  if (!didMount || isTelegram === null) {
+  if (!didMount || telegramEnv === null) {
     return (
       <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
         Checking Telegram…
@@ -117,11 +119,23 @@ export function Providers({ children }: PropsWithChildren) {
     );
   }
 
-  // Проверяем mock mode из env
-  const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
+  // Проверяем query override ?forceMock=1
+  const [forceMock, setForceMock] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
+      if (params.get('forceMock') === '1' && allowMock) {
+        setForceMock(true);
+      }
+    }
+  }, []);
+
+  // Используем shouldUseTelegram для решения показывать app или OutsideTelegram
+  const shouldUseTelegram = telegramEnv.shouldUseTelegram || useMockMode || forceMock;
 
   // Вне Telegram показываем OutsideTelegram (без AppRoot и без Telegram SDK)
-  if (!isTelegram && !useMockMode && !allowMock) {
+  if (!shouldUseTelegram) {
     return (
       <ErrorBoundary fallback={ErrorPage}>
         <OutsideTelegram
@@ -136,11 +150,27 @@ export function Providers({ children }: PropsWithChildren) {
 
   // Внутри Telegram (или в mock mode) - монтируем TelegramApp
   // TelegramApp содержит AppRoot и всю Telegram-логику
-  const isMockMode = useMockMode || allowMock;
+  const isMockMode = useMockMode || telegramEnv.allowMock;
+
+  // Компонент-обертка для ErrorBoundary fallback
+  function TelegramAppErrorFallback({ error }: { error: Error }) {
+    // Если TelegramApp упал, показываем OutsideTelegram
+    console.warn('TelegramApp failed, showing OutsideTelegram:', error);
+    return (
+      <ErrorBoundary fallback={ErrorPage}>
+        <OutsideTelegram
+          onMockMode={() => {
+            setUseMockMode(true);
+            window.location.reload();
+          }}
+        />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <AppearanceContext.Provider value={{ appearance, platform, setAppearance, setPlatform }}>
-      {isMockMode && !isTelegram && (
+      {(isMockMode || forceMock) && !telegramEnv.hasInitData && (
         <div style={{
           padding: '8px 16px',
           backgroundColor: '#fff3cd',
@@ -149,10 +179,13 @@ export function Providers({ children }: PropsWithChildren) {
           fontSize: '14px',
           color: '#856404',
         }}>
-          ⚠️ Mock mode (preview)
+          ⚠️ Mock mode
         </div>
       )}
-      <TelegramApp>{children}</TelegramApp>
+      {shouldUseTelegram && <StartParamRouter />}
+      <ErrorBoundary fallback={TelegramAppErrorFallback}>
+        <TelegramApp>{children}</TelegramApp>
+      </ErrorBoundary>
     </AppearanceContext.Provider>
   );
 }

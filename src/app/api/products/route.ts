@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
 
+/**
+ * GET /api/products
+ * Публичный endpoint для получения списка товаров.
+ * Не требует авторизации - каталог можно отдавать без initData.
+ */
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
@@ -21,8 +26,25 @@ export async function GET() {
       })),
     );
   } catch (error: unknown) {
-    console.error('GET /api/products error', error);
-    return NextResponse.json({ error: 'Failed to load products' }, { status: 500 });
+    // Логируем реальную причину в server logs (без initData)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('GET /api/products error:', {
+      message: errorMessage,
+      stack: errorStack,
+      // Не логируем initData или другие секреты
+    });
+
+    // Возвращаем JSON с code + message (без секретов)
+    return NextResponse.json(
+      {
+        code: 'PRODUCTS_FETCH_ERROR',
+        message: 'Failed to load products',
+        // Не возвращаем детали ошибки в production для безопасности
+        ...(process.env.NODE_ENV === 'development' ? { detail: errorMessage } : {}),
+      },
+      { status: 500 }
+    );
   }
 }
 

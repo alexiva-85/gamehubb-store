@@ -7,6 +7,7 @@
 | `NEXT_PUBLIC_TG_BOT_URL` | `src/components/OutsideTelegram.tsx:15` | ❌ Нет | `""` | URL бота для кнопки "Open bot" |
 | `NEXT_PUBLIC_ALLOW_TG_MOCK` | `src/mockEnv.ts:7`, `src/instrumentation-client.ts:9`, `src/components/OutsideTelegram.tsx:16` | ❌ Нет | `"false"` | Разрешить мок-режим для разработки |
 | `NEXT_PUBLIC_SUPPORT_BOT_USERNAME` | `src/lib/tg.ts:102` | ❌ Нет | `"support"` | Username бота поддержки |
+| `NEXT_PUBLIC_DEBUG_CATALOG` | `src/app/catalog/page.tsx` | ❌ Нет | `"false"` | Показывать диагностическую панель на /catalog |
 
 ## Core required (базовая инфраструктура)
 

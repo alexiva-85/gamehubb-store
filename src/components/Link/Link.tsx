@@ -41,7 +41,22 @@ export const Link: FC<LinkProps> = ({
 
       if (isExternal) {
         e.preventDefault();
-        openLink(targetUrl.toString());
+        try {
+          // Проверяем, что мы в Telegram перед вызовом openLink
+          const inTelegram = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp;
+          const allowMock = (process.env.NEXT_PUBLIC_ALLOW_TG_MOCK || 'false') === 'true';
+          
+          if (inTelegram || allowMock) {
+            openLink(targetUrl.toString());
+          } else {
+            // Fallback для обычного браузера
+            window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
+          }
+        } catch (error) {
+          console.warn('Failed to open link via Telegram SDK:', error);
+          // Fallback для обычного браузера
+          window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
+        }
       }
     },
     [href, propsOnClick],
