@@ -1,59 +1,26 @@
 {
-  "name": "nextjs-template",
+  "name": "gamehubb",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:https": "next dev --experimental-https",
-    "build": "pnpm prisma:generate && next build",
+    "build": "next build",
     "start": "next start",
-    "postinstall": "prisma generate",
-    "lint": "next lint",
-    "test:unit": "vitest run",
-    "test:e2e": "cross-env NODE_ENV=test TG_INITDATA_BYPASS_FOR_E2E=true playwright test",
-    "test:all": "pnpm test:unit && pnpm test:e2e",
-    "prisma:generate": "prisma generate",
-    "db:push:test": "prisma db push --skip-generate",
-    "seed:test": "tsx prisma/seed.ts",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:push": "prisma db push",
-    "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "lint": "eslint"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.1",
-    "@telegram-apps/telegram-ui": "^2.1.13",
-    "@tma.js/init-data-node": "^2.0.4",
-    "@tma.js/sdk-react": "^3.0.11",
-    "@tonconnect/ui-react": "^2.3.1",
-    "eruda": "^3.4.3",
-    "next": "16.0.7",
-    "next-intl": "^4.5.5",
-    "normalize.css": "^8.0.1",
-    "react": "^19",
-    "react-dom": "^19"
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
-    "@tailwindcss/postcss": "^4.1.17",
-    "@types/node": "^24",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitest/coverage-v8": "^4.0.16",
-    "cross-env": "^10.1.0",
-    "dotenv": "^17.2.3",
     "eslint": "^9",
-    "eslint-config-next": "16.0.4",
-    "jsdom": "^27.3.0",
-    "postcss": "^8",
-    "prisma": "6",
-    "tailwindcss": "^4.1.17",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
