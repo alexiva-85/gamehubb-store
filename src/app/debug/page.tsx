@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { detectTelegramEnv } from '@/lib/telegram/detect';
+import { BuildInfo } from '@/components/BuildInfo';
 
 /**
  * Debug page for diagnosing Telegram WebApp detection.
@@ -9,12 +11,7 @@ import { useRouter } from 'next/navigation';
  */
 export default function DebugPage() {
   const router = useRouter();
-  const [debugInfo, setDebugInfo] = useState<{
-    inTelegram: boolean;
-    hasWebAppObject: boolean;
-    hasWebviewProxy: boolean;
-    hasTgWebAppDataInUrl: boolean;
-    hasInitData: boolean;
+  const [debugInfo, setDebugInfo] = useState<ReturnType<typeof detectTelegramEnv> & {
     initDataLength: number;
     platform: string;
     version: string;
@@ -26,45 +23,42 @@ export default function DebugPage() {
       return;
     }
 
+    const env = detectTelegramEnv();
     const tg = (window as any).Telegram;
     const webApp = tg?.WebApp;
-    const hasWebAppObject = Boolean(webApp);
-    const hasWebviewProxy = Boolean((window as any).TelegramWebviewProxy);
     
-    // Проверяем tgWebAppData в URL
-    const hash = window.location.hash || '';
-    const search = window.location.search || '';
-    const hasTgWebAppDataInUrl = hash.includes('tgWebAppData=') || search.includes('tgWebAppData=');
+    // Получаем startParam из initDataUnsafe или через retrieveLaunchParams
+    let startParam = webApp?.initDataUnsafe?.start_param ?? '';
     
-    // Определяем inTelegram
-    const inTelegram = hasWebAppObject || hasWebviewProxy || hasTgWebAppDataInUrl;
-    
-    // Определяем hasInitData и initDataLength
-    let hasInitData = false;
-    let initDataLength = 0;
-    
-    if (webApp?.initData) {
-      hasInitData = true;
-      initDataLength = webApp.initData.length;
-    } else if (hasTgWebAppDataInUrl) {
-      // Извлекаем tgWebAppData из URL для подсчета длины
-      const tgWebAppDataMatch = (hash + search).match(/tgWebAppData=([^&]+)/);
-      if (tgWebAppDataMatch && tgWebAppDataMatch[1]) {
-        hasInitData = true;
-        initDataLength = tgWebAppDataMatch[1].length;
-      }
+    // Если не нашли, пытаемся получить через @tma.js/sdk-react
+    if (!startParam && env.shouldUseTelegram) {
+      import('@tma.js/sdk-react')
+        .then(({ retrieveLaunchParams }) => {
+          try {
+            const lp = retrieveLaunchParams();
+            startParam = lp.tgWebAppStartParam || '';
+            setDebugInfo({
+              ...env,
+              initDataLength: env.initDataLength,
+              platform: webApp?.platform ?? 'unknown',
+              version: webApp?.version ?? 'unknown',
+              startParam,
+            });
+          } catch (e) {
+            // Игнорируем ошибки
+          }
+        })
+        .catch(() => {
+          // Игнорируем ошибки загрузки модуля
+        });
     }
 
     setDebugInfo({
-      inTelegram,
-      hasWebAppObject,
-      hasWebviewProxy,
-      hasTgWebAppDataInUrl,
-      hasInitData,
-      initDataLength,
+      ...env,
+      initDataLength: env.initDataLength,
       platform: webApp?.platform ?? 'unknown',
       version: webApp?.version ?? 'unknown',
-      startParam: webApp?.initDataUnsafe?.start_param ?? '',
+      startParam,
     });
   }, []);
 
@@ -94,9 +88,9 @@ export default function DebugPage() {
             </h2>
             <div style={{ display: 'grid', gap: '8px', fontFamily: 'monospace', fontSize: '14px' }}>
               <div>
-                <strong>inTelegram:</strong>{' '}
-                <span style={{ color: debugInfo.inTelegram ? '#28a745' : '#dc3545' }}>
-                  {String(debugInfo.inTelegram)}
+                <strong>shouldUseTelegram:</strong>{' '}
+                <span style={{ color: debugInfo.shouldUseTelegram ? '#28a745' : '#dc3545' }}>
+                  {String(debugInfo.shouldUseTelegram)}
                 </span>
               </div>
               <div>
@@ -106,21 +100,33 @@ export default function DebugPage() {
                 </span>
               </div>
               <div>
+                <strong>uaHasTelegram:</strong>{' '}
+                <span style={{ color: debugInfo.uaHasTelegram ? '#28a745' : '#dc3545' }}>
+                  {String(debugInfo.uaHasTelegram)}
+                </span>
+              </div>
+              <div>
+                <strong>hasTgParamsInUrl:</strong>{' '}
+                <span style={{ color: debugInfo.hasTgParamsInUrl ? '#28a745' : '#dc3545' }}>
+                  {String(debugInfo.hasTgParamsInUrl)}
+                </span>
+              </div>
+              <div>
                 <strong>hasWebviewProxy:</strong>{' '}
                 <span style={{ color: debugInfo.hasWebviewProxy ? '#28a745' : '#dc3545' }}>
                   {String(debugInfo.hasWebviewProxy)}
                 </span>
               </div>
               <div>
-                <strong>hasTgWebAppDataInUrl:</strong>{' '}
-                <span style={{ color: debugInfo.hasTgWebAppDataInUrl ? '#28a745' : '#dc3545' }}>
-                  {String(debugInfo.hasTgWebAppDataInUrl)}
-                </span>
-              </div>
-              <div>
                 <strong>hasInitData:</strong>{' '}
                 <span style={{ color: debugInfo.hasInitData ? '#28a745' : '#dc3545' }}>
                   {String(debugInfo.hasInitData)}
+                </span>
+              </div>
+              <div>
+                <strong>allowMock:</strong>{' '}
+                <span style={{ color: debugInfo.allowMock ? '#28a745' : '#dc3545' }}>
+                  {String(debugInfo.allowMock)}
                 </span>
               </div>
               <div>
@@ -139,15 +145,17 @@ export default function DebugPage() {
           </div>
 
           <div style={{
-            backgroundColor: debugInfo.inTelegram ? '#d4edda' : '#f8d7da',
+            backgroundColor: debugInfo.shouldUseTelegram ? '#d4edda' : '#f8d7da',
             padding: '12px',
             borderRadius: '6px',
             marginBottom: '16px',
           }}>
             <strong>Status:</strong>{' '}
-            {debugInfo.inTelegram
-              ? '✅ Telegram WebApp detected'
-              : '❌ Not in Telegram environment'}
+            {debugInfo.shouldUseTelegram
+              ? '✅ Telegram WebApp detected (will use TelegramApp)'
+              : debugInfo.hasWebAppObject && !debugInfo.hasInitData
+              ? '⚠️ WebApp object present but no initData (likely opened in browser)'
+              : '❌ Not in Telegram environment (will show OutsideTelegram)'}
           </div>
         </div>
       )}
@@ -169,6 +177,7 @@ export default function DebugPage() {
           Open catalog
         </button>
       </div>
+      <BuildInfo />
     </div>
   );
 }

@@ -38,3 +38,4 @@ export function isTelegramWebApp(): boolean {
   return false;
 }
 
+

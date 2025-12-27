@@ -19,9 +19,15 @@ import { useAppearance } from './providers';
  * TelegramApp - компонент, который монтируется ТОЛЬКО внутри Telegram Mini App.
  * Содержит всю логику инициализации Telegram SDK, провайдеры и хуки.
  * Этот компонент НЕ должен рендериться вне Telegram.
+ * 
+ * Хуки из @tma.js/sdk-react могут бросать ошибки вне Telegram,
+ * но они обернуты в ErrorBoundary, который поймает ошибки и покажет ErrorPage.
+ * Providers уже проверяет окружение перед рендерингом этого компонента.
  */
 export function TelegramApp({ children }: PropsWithChildren) {
-  // Эти хуки могут вызывать Telegram API, поэтому они должны быть только внутри TelegramApp
+  // Хуки должны вызываться на верхнем уровне компонента
+  // Если они бросают ошибку, ErrorBoundary на уровне Providers поймает её
+  // и покажет OutsideTelegram
   const lp = useLaunchParams();
   const isDark = useSignal(miniApp.isDark);
   const initDataUser = useSignal(initData.user);
@@ -29,7 +35,13 @@ export function TelegramApp({ children }: PropsWithChildren) {
 
   // Set the user locale.
   useEffect(() => {
-    initDataUser && setLocale(initDataUser.language_code);
+    if (initDataUser) {
+      try {
+        setLocale(initDataUser.language_code);
+      } catch (e) {
+        console.warn('Failed to set locale:', e);
+      }
+    }
   }, [initDataUser]);
 
   // Update appearance and platform in Providers
@@ -57,4 +69,5 @@ export function TelegramApp({ children }: PropsWithChildren) {
     </ErrorBoundary>
   );
 }
+
 

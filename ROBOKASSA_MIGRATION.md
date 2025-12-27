@@ -134,3 +134,4 @@ ROBOKASSA_API_BASE_URL=https://auth.robokassa.ru/Merchant/Index.aspx
 3. **Webhook**: Robokassa ожидает ответ "OK" в случае успешной обработки
 4. **Тестовый режим**: Используйте `ROBOKASSA_TEST_MODE=true` для тестирования без реальных платежей
 
+

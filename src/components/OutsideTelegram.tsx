@@ -31,6 +31,9 @@ export function OutsideTelegram({ onMockMode }: OutsideTelegramProps) {
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>
           Open this app in Telegram
         </h1>
+        <p style={{ fontSize: '14px', color: '#999', marginBottom: '8px', fontStyle: 'italic' }}>
+          OutsideTelegram (no crash)
+        </p>
         <p style={{ fontSize: '16px', color: '#666', marginBottom: '20px' }}>
           This is a Telegram Mini App. Please open it from the bot.
         </p>
