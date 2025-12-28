@@ -9,13 +9,6 @@ export default function RequisitesPage() {
       <h1 className="text-3xl font-bold mb-6">Реквизиты продавца</h1>
       
       <div className="space-y-6">
-        <section className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-          <p className="text-sm text-yellow-800">
-            <strong>Внимание:</strong> Данная информация находится в процессе заполнения. 
-            Некоторые поля помечены как TODO и будут обновлены.
-          </p>
-        </section>
-
         <section className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Информация о продавце</h2>
           
@@ -24,16 +17,16 @@ export default function RequisitesPage() {
               <strong>Статус:</strong> Самозанятый
             </div>
             <div>
-              <strong>Полное имя:</strong> <span className="text-gray-500">TODO: указать ФИО</span>
+              <strong>Полное имя:</strong> Иващенко Александр Владимирович
             </div>
             <div>
-              <strong>ИНН:</strong> <span className="text-gray-500">TODO: указать ИНН</span>
+              <strong>ИНН:</strong> 470315391829
             </div>
             <div>
               <strong>Страна:</strong> Россия
             </div>
             <div>
-              <strong>Город:</strong> <span className="text-gray-500">TODO: указать город</span>
+              <strong>Город:</strong> Санкт-Петербург
             </div>
             <div>
               <strong>Email:</strong>{' '}
