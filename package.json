@@ -11,6 +11,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:deploy": "prisma migrate deploy"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["prisma", "@prisma/engines", "@prisma/client", "esbuild"]
+  },
   "engines": {
     "node": ">=20.0.0 <21.0.0",
     "pnpm": ">=8.0.0"
