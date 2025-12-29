@@ -1,4 +1,4 @@
-import { PrismaClient, Provider } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +9,7 @@ const products = [
     description: 'Пополнение игрового счета на 100 рублей',
     priceRub: 100,
     category: 'Top-up',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -18,7 +18,7 @@ const products = [
     description: 'Пополнение игрового счета на 500 рублей',
     priceRub: 500,
     category: 'Top-up',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -27,7 +27,7 @@ const products = [
     description: 'Пополнение игрового счета на 1000 рублей',
     priceRub: 1000,
     category: 'Top-up',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -36,7 +36,7 @@ const products = [
     description: 'Пополнение игрового счета на 2000 рублей',
     priceRub: 2000,
     category: 'Top-up',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -45,7 +45,7 @@ const products = [
     description: 'Пополнение игрового счета на 5000 рублей',
     priceRub: 5000,
     category: 'Top-up',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -54,7 +54,7 @@ const products = [
     description: 'Игровая валюта - золото',
     priceRub: 150,
     category: 'Resources',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -63,7 +63,7 @@ const products = [
     description: 'Премиум валюта - кристаллы',
     priceRub: 200,
     category: 'Resources',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -72,7 +72,7 @@ const products = [
     description: 'Игровая энергия для действий',
     priceRub: 120,
     category: 'Resources',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -81,7 +81,7 @@ const products = [
     description: 'Месячный премиум пропуск',
     priceRub: 299,
     category: 'Items',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -90,7 +90,7 @@ const products = [
     description: 'Эксклюзивный скин персонажа',
     priceRub: 499,
     category: 'Items',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -99,7 +99,7 @@ const products = [
     description: 'Удвоение опыта на 7 дней',
     priceRub: 179,
     category: 'Boosts',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
   {
@@ -108,7 +108,7 @@ const products = [
     description: 'Случайные редкие предметы',
     priceRub: 349,
     category: 'Items',
-    provider: Provider.MANUAL,
+    provider: 'MANUAL' as const,
     isActive: true,
   },
 ];
