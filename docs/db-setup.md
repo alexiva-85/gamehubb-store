@@ -19,22 +19,36 @@ DIRECT_URL="postgresql://user:password@host:port/database?sslmode=require"
 
 ### В Vercel
 
-Переменные окружения уже настроены:
-- `DATABASE_URL` - для приложения (transaction pooler)
-- `DIRECT_URL` - для миграций (direct connection)
+**Production и Preview:**
+- `DATABASE_URL` - для приложения (transaction pooler, порт 6543, pgbouncer=true)
+- `DIRECT_URL` - для миграций (session pooler, порт 5432)
+
+**⚠️ ВАЖНО для Vercel Preview:**
+Для успешного Preview deploy необходимо настроить те же переменные окружения, что и в Production:
+- Settings → Environment Variables → Add для Preview environment
+- `DATABASE_URL` - Supabase Transaction pooler (порт 6543, pgbouncer=true)
+- `DIRECT_URL` - Supabase Session pooler IPv4 (порт 5432)
+
+**Формат:**
+- `DATABASE_URL`: `postgresql://postgres.<projectRef>:<password>@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
+- `DIRECT_URL`: `postgresql://postgres.<projectRef>:<password>@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres`
 
 ## Команды
 
 ### Генерация Prisma Client
 
+**Локально (с env loading):**
 ```bash
-pnpm prisma:generate
+set -a && source .env.local && set +a && pnpm prisma:generate
 ```
 
 Или напрямую:
 ```bash
-pnpm prisma generate
+set -a && source .env.local && set +a && pnpm prisma generate
 ```
+
+**В Vercel:**
+Prisma Client генерируется автоматически во время build через `prisma generate` (если настроен в build script).
 
 **Когда использовать:**
 - После изменения `prisma/schema.prisma`
@@ -49,15 +63,19 @@ pnpm prisma generate
 
 #### Локально
 
+**Важно:** `prisma.config.ts` использует `dotenv/config`, но для надежности рекомендуется явно загружать env:
+
 ```bash
-# Убедитесь что DIRECT_URL настроен в .env
-pnpm prisma:migrate:deploy
+# Загрузить env переменные и применить миграции
+set -a && source .env.local && set +a && pnpm prisma:migrate:deploy
 ```
 
 Или напрямую:
 ```bash
-pnpm prisma migrate deploy
+set -a && source .env.local && set +a && pnpm prisma migrate deploy
 ```
+
+**Примечание:** `set -a` экспортирует все переменные из .env.local, `set +a` отключает автоматический экспорт.
 
 #### Через Vercel CLI
 
