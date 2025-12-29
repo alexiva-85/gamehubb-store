@@ -9,7 +9,10 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:generate": "prisma generate"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["prisma", "@prisma/engines", "@prisma/client", "esbuild"]
@@ -34,6 +37,7 @@
     "eslint-config-next": "16.1.1",
     "prisma": "6.19.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
