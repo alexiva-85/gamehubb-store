@@ -9,9 +9,9 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: process.env["DATABASE_URL"] || "postgresql://localhost:5432/gamehubb",
     // DIRECT_URL is used for migrations (direct connection, not through pooler)
     // Set DIRECT_URL in environment for migrations to work correctly
-    directUrl: process.env["DIRECT_URL"],
+    directUrl: process.env["DIRECT_URL"] || process.env["DATABASE_URL"] || "postgresql://localhost:5432/gamehubb",
   },
 });
