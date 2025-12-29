@@ -6,23 +6,29 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Provider {
+  MANUAL
+  DIGIFLAZZ
+  AUTOMATED
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  sku         String   @unique
+  id          String    @id @default(uuid())
+  sku         String    @unique
   title       String
   description String?
-  priceRub    Int      @map("price_rub")
-  currency    String   @default("RUB")
+  priceRub    Int       @map("price_rub")
   category    String?
-  provider    String   @default("MANUAL")
-  isActive    Boolean  @default(true) @map("is_active")
-  imageUrl    String?  @map("image_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  provider    Provider  @default(MANUAL)
+  isActive    Boolean   @default(true) @map("is_active")
+  imageUrl    String?   @map("image_url")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@map("products")
   @@index([isActive, category])

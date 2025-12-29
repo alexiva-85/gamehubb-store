@@ -1,9 +1,10 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-const products = [
+/**
+ * Fallback products data used when database is empty
+ * This ensures catalog is never empty
+ */
+export const FALLBACK_PRODUCTS = [
   {
+    id: 'fallback-1',
     sku: 'GAME-TOPUP-100',
     title: 'Пополнение счета 100₽',
     description: 'Пополнение игрового счета на 100 рублей',
@@ -11,8 +12,10 @@ const products = [
     category: 'Top-up',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
+    id: 'fallback-2',
     sku: 'GAME-TOPUP-500',
     title: 'Пополнение счета 500₽',
     description: 'Пополнение игрового счета на 500 рублей',
@@ -20,8 +23,10 @@ const products = [
     category: 'Top-up',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
+    id: 'fallback-3',
     sku: 'GAME-TOPUP-1000',
     title: 'Пополнение счета 1000₽',
     description: 'Пополнение игрового счета на 1000 рублей',
@@ -29,26 +34,10 @@ const products = [
     category: 'Top-up',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
-    sku: 'GAME-TOPUP-2000',
-    title: 'Пополнение счета 2000₽',
-    description: 'Пополнение игрового счета на 2000 рублей',
-    priceRub: 2000,
-    category: 'Top-up',
-    provider: 'MANUAL' as const,
-    isActive: true,
-  },
-  {
-    sku: 'GAME-TOPUP-5000',
-    title: 'Пополнение счета 5000₽',
-    description: 'Пополнение игрового счета на 5000 рублей',
-    priceRub: 5000,
-    category: 'Top-up',
-    provider: 'MANUAL' as const,
-    isActive: true,
-  },
-  {
+    id: 'fallback-4',
     sku: 'RESOURCE-GOLD-100',
     title: 'Золото 100 единиц',
     description: 'Игровая валюта - золото',
@@ -56,8 +45,10 @@ const products = [
     category: 'Resources',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
+    id: 'fallback-5',
     sku: 'RESOURCE-GEMS-50',
     title: 'Кристаллы 50 единиц',
     description: 'Премиум валюта - кристаллы',
@@ -65,17 +56,10 @@ const products = [
     category: 'Resources',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
-    sku: 'RESOURCE-ENERGY-100',
-    title: 'Энергия 100 единиц',
-    description: 'Игровая энергия для действий',
-    priceRub: 120,
-    category: 'Resources',
-    provider: 'MANUAL' as const,
-    isActive: true,
-  },
-  {
+    id: 'fallback-6',
     sku: 'ITEM-PREMIUM-PASS',
     title: 'Премиум пропуск',
     description: 'Месячный премиум пропуск',
@@ -83,8 +67,32 @@ const products = [
     category: 'Items',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
+    id: 'fallback-7',
+    sku: 'GAME-TOPUP-2000',
+    title: 'Пополнение счета 2000₽',
+    description: 'Пополнение игрового счета на 2000 рублей',
+    priceRub: 2000,
+    category: 'Top-up',
+    provider: 'MANUAL' as const,
+    isActive: true,
+    imageUrl: null,
+  },
+  {
+    id: 'fallback-8',
+    sku: 'RESOURCE-ENERGY-100',
+    title: 'Энергия 100 единиц',
+    description: 'Игровая энергия для действий',
+    priceRub: 120,
+    category: 'Resources',
+    provider: 'MANUAL' as const,
+    isActive: true,
+    imageUrl: null,
+  },
+  {
+    id: 'fallback-9',
     sku: 'ITEM-SKIN-LEGENDARY',
     title: 'Легендарная скин',
     description: 'Эксклюзивный скин персонажа',
@@ -92,8 +100,21 @@ const products = [
     category: 'Items',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
+    id: 'fallback-10',
+    sku: 'GAME-TOPUP-5000',
+    title: 'Пополнение счета 5000₽',
+    description: 'Пополнение игрового счета на 5000 рублей',
+    priceRub: 5000,
+    category: 'Top-up',
+    provider: 'MANUAL' as const,
+    isActive: true,
+    imageUrl: null,
+  },
+  {
+    id: 'fallback-11',
     sku: 'RESOURCE-XP-BOOST',
     title: 'Буст опыта x2',
     description: 'Удвоение опыта на 7 дней',
@@ -101,8 +122,10 @@ const products = [
     category: 'Boosts',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
   {
+    id: 'fallback-12',
     sku: 'ITEM-PREMIUM-BOX',
     title: 'Премиум бокс',
     description: 'Случайные редкие предметы',
@@ -110,30 +133,7 @@ const products = [
     category: 'Items',
     provider: 'MANUAL' as const,
     isActive: true,
+    imageUrl: null,
   },
 ];
-
-async function main() {
-  console.log('Seeding products...');
-
-  for (const product of products) {
-    await prisma.product.upsert({
-      where: { sku: product.sku },
-      update: product,
-      create: product,
-    });
-    console.log(`✓ Upserted product: ${product.sku}`);
-  }
-
-  console.log('✅ Seed completed!');
-}
-
-main()
-  .catch((e) => {
-    console.error('❌ Seed failed:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
 
