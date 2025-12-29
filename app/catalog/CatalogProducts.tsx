@@ -4,7 +4,6 @@ interface Product {
   title: string;
   description: string | null;
   priceRub: number;
-  currency: string;
   category: string | null;
   provider: string;
   isActive: boolean;
