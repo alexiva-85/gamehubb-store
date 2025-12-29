@@ -1,5 +1,11 @@
 packages:
   - .
+
+onlyBuiltDependencies:
+  - prisma
+  - '@prisma/client'
+  - '@prisma/engines'
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
