@@ -18,19 +18,37 @@ enum Provider {
 }
 
 model Product {
-  id          String    @id @default(uuid())
-  sku         String    @unique
+  id          String   @id @default(uuid())
+  sku         String   @unique
   title       String
   description String?
-  priceRub    Int       @map("price_rub")
+  priceRub    Int      @map("price_rub")
   category    String?
-  provider    Provider  @default(MANUAL)
-  isActive    Boolean   @default(true) @map("is_active")
-  imageUrl    String?   @map("image_url")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  provider    Provider @default(MANUAL)
+  isActive    Boolean  @default(true) @map("is_active")
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@map("products")
   @@index([isActive, category])
   @@index([sku])
+  @@map("products")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  tgId         String    @unique @map("tg_id")
+  referralCode String    @unique @map("referral_code")
+  referredById String?   @map("referred_by_id")
+  referredAt   DateTime? @map("referred_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  referredBy User?  @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals  User[] @relation("UserReferrals")
+
+  @@index([tgId])
+  @@index([referralCode])
+  @@index([referredById])
+  @@map("users")
 }

@@ -3,27 +3,64 @@
 import { useState, useEffect } from 'react';
 import Card from '@/app/components/Card';
 
+interface UserData {
+  tgId: string;
+  referralCode: string;
+  referredById: string | null;
+}
+
 export default function ProfilePage() {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if referral code exists (from existing user state if available)
-    // For now, we don't have user state, so it will be null
-    // In future, this could come from: localStorage, API, Telegram WebApp initData, etc.
-    const storedCode = typeof window !== 'undefined' 
-      ? localStorage.getItem('gamehubb_referral_code') 
-      : null;
-    
-    if (storedCode) {
-      setReferralCode(storedCode);
-    }
-
     // Check if Web Share API is available
     if (typeof window !== 'undefined' && 'share' in navigator && typeof navigator.share === 'function') {
       setCanShare(true);
     }
+
+    // Fetch user data from /api/me
+    const fetchUserData = async () => {
+      if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const tg = (window as any).Telegram?.WebApp;
+        const initData = tg?.initData || '';
+        const initDataUnsafe = tg?.initDataUnsafe || null;
+        const startParam = initDataUnsafe?.start_param || 
+          new URLSearchParams(window.location.search).get('tgWebAppStartParam') || 
+          null;
+
+        const response = await fetch('/api/me', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            initData,
+            startParam,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user?.referralCode) {
+            setReferralCode(data.user.referralCode);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   const referralLink = referralCode 
@@ -73,7 +110,11 @@ export default function ProfilePage() {
             Начисления и скидка включатся после запуска программы.
           </p>
 
-          {referralLink ? (
+          {loading ? (
+            <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
+              <p className="text-sm text-zinc-400 text-center">Загрузка...</p>
+            </div>
+          ) : referralLink ? (
             <div className="space-y-4">
               <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-3">
                 <p className="text-xs text-zinc-400 mb-1">Твоя реферальная ссылка:</p>
