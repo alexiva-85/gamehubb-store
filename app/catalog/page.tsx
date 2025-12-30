@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { games } from "@/lib/games";
+import { GAMES } from "@/lib/games";
 
 export const metadata = {
   title: "Каталог игр — GameHubb",
@@ -17,14 +17,13 @@ export default function CatalogPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {games.map((g) => (
+        {GAMES.map((g) => (
           <Link
             key={g.slug}
             href={`/catalog/${g.slug}`}
             className="rounded-xl border p-4 hover:bg-muted/50 transition"
           >
-            <div className="text-lg font-ubtitle}</div>
-            ) : null}
+            <div className="text-lg font-medium">{g.name}</div>
           </Link>
         ))}
       </div>
