@@ -34,6 +34,13 @@ export default function Header() {
             >
               Контакты
             </Link>
+            <Link
+              href="/profile"
+              className="text-sm font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors"
+              aria-label="Профиль"
+            >
+              Профиль
+            </Link>
             <CartIcon />
           </nav>
         </div>
