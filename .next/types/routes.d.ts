@@ -5,7 +5,7 @@ type AppRoutes = "/" | "/cart" | "/catalog" | "/catalog/[gameSlug]" | "/checkout
 type AppRouteHandlerRoutes = "/api/build-info" | "/api/products"
 type PageRoutes = never
 type LayoutRoutes = "/"
-type RedirectRoutes = never
+type RedirectRoutes = "/cart" | "/catalog" | "/catalog/[gameSlug]" | "/checkout"
 type RewriteRoutes = never
 type Routes = AppRoutes | PageRoutes | LayoutRoutes | RedirectRoutes | RewriteRoutes | AppRouteHandlerRoutes
 
