@@ -1,3 +1,5 @@
+import Card from '@/app/components/Card';
+
 export const metadata = {
   title: 'Реквизиты продавца - GameHubb Store',
   description: 'Реквизиты и информация о продавце',
@@ -6,13 +8,13 @@ export const metadata = {
 export default function RequisitesPage() {
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">Реквизиты продавца</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white">Реквизиты продавца</h1>
       
       <div className="space-y-6">
-        <section className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Информация о продавце</h2>
+        <Card>
+          <h2 className="text-xl font-medium mb-4 text-zinc-100">Информация о продавце</h2>
           
-          <div className="space-y-3">
+          <div className="space-y-3 text-zinc-300">
             <div>
               <strong>Статус:</strong> Самозанятый
             </div>
@@ -30,31 +32,31 @@ export default function RequisitesPage() {
             </div>
             <div>
               <strong>Email:</strong>{' '}
-              <a href="mailto:support@gamehubb.store" className="text-blue-600 hover:underline">
+              <a href="mailto:support@gamehubb.store" className="text-blue-300 hover:underline hover:text-blue-200">
                 support@gamehubb.store
               </a>
             </div>
           </div>
-        </section>
+        </Card>
 
-        <section className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Дополнительная информация</h2>
-          <p>
+        <Card>
+          <h2 className="text-xl font-medium mb-4 text-zinc-100">Дополнительная информация</h2>
+          <p className="text-zinc-300">
             Продавец осуществляет деятельность в качестве самозанятого лица в соответствии 
             с законодательством Российской Федерации.
           </p>
-          <p className="mt-2">
+          <p className="mt-2 text-zinc-300">
             Все платежи обрабатываются через платежную систему Robokassa.
           </p>
-        </section>
+        </Card>
 
-        <section className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Контактная информация</h2>
-          <p>
+        <Card>
+          <h2 className="text-xl font-medium mb-4 text-zinc-100">Контактная информация</h2>
+          <p className="text-zinc-300">
             По всем вопросам обращайтесь в службу поддержки:{' '}
-            <a href="/contacts" className="text-blue-600 hover:underline">контакты</a>.
+            <a href="/contacts" className="text-blue-300 hover:underline hover:text-blue-200">контакты</a>.
           </p>
-        </section>
+        </Card>
       </div>
     </div>
   );
