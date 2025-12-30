@@ -1,4 +1,6 @@
 import Card from '@/app/components/Card';
+import TelegramLink from '@/app/components/TelegramLink';
+import { getContactInfo, getDisplayTelegramUsername } from '@/lib/contacts';
 
 export const metadata = {
   title: 'Контакты - GameHubb Store',
@@ -6,6 +8,10 @@ export const metadata = {
 };
 
 export default function ContactsPage() {
+  const contactInfo = getContactInfo();
+  const telegramUsername = getDisplayTelegramUsername(contactInfo);
+  const isBot = !contactInfo.supportTgUsername;
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6 text-white">Контакты</h1>
@@ -16,15 +22,15 @@ export default function ContactsPage() {
           <div className="space-y-3 text-zinc-300">
             <div>
               <strong>Email:</strong>{' '}
-              <a href="mailto:support@gamehubb.store" className="text-blue-300 hover:underline hover:text-blue-200">
-                support@gamehubb.store
+              <a href={`mailto:${contactInfo.email}`} className="text-blue-300 hover:underline hover:text-blue-200">
+                {contactInfo.email}
               </a>
             </div>
             <div>
               <strong>Telegram:</strong>{' '}
-              <a href="https://t.me/gamehubb_support" target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:underline hover:text-blue-200">
-                @gamehubb_support
-              </a>
+              <TelegramLink username={telegramUsername} className="text-blue-300 hover:underline hover:text-blue-200">
+                @{telegramUsername}{isBot ? ' (поддержка)' : ''}
+              </TelegramLink>
             </div>
           </div>
         </Card>

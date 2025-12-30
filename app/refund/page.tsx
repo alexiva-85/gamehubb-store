@@ -1,4 +1,6 @@
 import Card from '@/app/components/Card';
+import TelegramLink from '@/app/components/TelegramLink';
+import { getContactInfo, getDisplayTelegramUsername } from '@/lib/contacts';
 
 export const metadata = {
   title: 'Политика возвратов - GameHubb Store',
@@ -6,6 +8,10 @@ export const metadata = {
 };
 
 export default function RefundPage() {
+  const contactInfo = getContactInfo();
+  const telegramUsername = getDisplayTelegramUsername(contactInfo);
+  const isBot = !contactInfo.supportTgUsername;
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6 text-white">Политика возвратов и доставки</h1>
@@ -101,8 +107,13 @@ export default function RefundPage() {
             Для оформления возврата обращайтесь в службу поддержки:
           </p>
           <ul className="list-none space-y-2 text-zinc-300">
-            <li><strong>Email:</strong> <a href="mailto:support@gamehubb.store" className="text-blue-300 hover:underline hover:text-blue-200">support@gamehubb.store</a></li>
-            <li><strong>Telegram:</strong> <a href="https://t.me/gamehubb_support" target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:underline hover:text-blue-200">@gamehubb_support</a></li>
+            <li><strong>Email:</strong> <a href={`mailto:${contactInfo.email}`} className="text-blue-300 hover:underline hover:text-blue-200">{contactInfo.email}</a></li>
+            <li>
+              <strong>Telegram:</strong>{' '}
+              <TelegramLink username={telegramUsername} className="text-blue-300 hover:underline hover:text-blue-200">
+                @{telegramUsername}{isBot ? ' (поддержка)' : ''}
+              </TelegramLink>
+            </li>
           </ul>
           <p className="mt-4 text-zinc-300">
             В запросе обязательно укажите номер заказа и причину возврата.

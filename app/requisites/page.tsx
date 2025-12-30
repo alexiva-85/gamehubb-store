@@ -1,4 +1,5 @@
 import Card from '@/app/components/Card';
+import { getContactInfo } from '@/lib/contacts';
 
 export const metadata = {
   title: 'Реквизиты продавца - GameHubb Store',
@@ -6,6 +7,8 @@ export const metadata = {
 };
 
 export default function RequisitesPage() {
+  const contactInfo = getContactInfo();
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6 text-white">Реквизиты продавца</h1>
@@ -32,8 +35,8 @@ export default function RequisitesPage() {
             </div>
             <div>
               <strong>Email:</strong>{' '}
-              <a href="mailto:support@gamehubb.store" className="text-blue-300 hover:underline hover:text-blue-200">
-                support@gamehubb.store
+              <a href={`mailto:${contactInfo.email}`} className="text-blue-300 hover:underline hover:text-blue-200">
+                {contactInfo.email}
               </a>
             </div>
           </div>
