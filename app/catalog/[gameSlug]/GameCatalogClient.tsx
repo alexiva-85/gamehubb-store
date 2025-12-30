@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useCart } from '@/app/providers/CartProvider';
 import type { ProductWithGame } from '@/lib/products';
 
 interface GameCatalogClientProps {
@@ -17,6 +18,7 @@ export default function GameCatalogClient({
 }: GameCatalogClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category>('Все');
+  const { addToCart } = useCart();
 
   const filteredProducts = useMemo(() => {
     let filtered = initialProducts;
@@ -102,8 +104,18 @@ export default function GameCatalogClient({
                 <span className="text-2xl font-bold">
                   {product.priceRub}₽
                 </span>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-                  Купить
+                <button
+                  onClick={() =>
+                    addToCart({
+                      id: product.id,
+                      title: product.title,
+                      priceRub: product.priceRub,
+                      gameSlug: product.gameSlug || '',
+                    })
+                  }
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  В корзину
                 </button>
               </div>
               {product.category && (

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CartIcon from './CartIcon';
 
 export default function Header() {
   return (
@@ -21,6 +22,7 @@ export default function Header() {
             >
               Контакты
             </Link>
+            <CartIcon />
           </nav>
         </div>
       </div>
