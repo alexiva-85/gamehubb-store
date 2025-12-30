@@ -5,9 +5,9 @@ export default function Header() {
   return (
     <header className="border-b border-[#3a3a3a] bg-[#1a1a1a]">
       <div className="container mx-auto px-3 py-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
           {/* LEFT: Brand */}
-          <Link href="/" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity flex-shrink">
+          <Link href="/" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
             <div className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 overflow-hidden rounded-xl ring-1 ring-white/10 bg-black/20 flex items-center justify-center flex-shrink-0">
               <picture className="block">
                 <source srcSet="/brand/logo-mark.webp" type="image/webp" />
@@ -23,32 +23,35 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* CENTER: Navigation */}
-          <nav className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-1 justify-center min-w-0 overflow-hidden">
-            <Link
-              href="/catalog"
-              className="text-xs sm:text-sm font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap px-1"
-            >
-              Каталог
-            </Link>
-            <Link
-              href="/profile"
-              className="text-xs sm:text-sm font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap px-1"
-              aria-label="Профиль"
-            >
-              Профиль
-            </Link>
-            <Link
-              href="/contacts"
-              className="text-xs sm:text-sm font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap px-1 hidden sm:block"
-            >
-              Контакты
-            </Link>
-          </nav>
+          {/* RIGHT: Navigation + Cart */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {/* Navigation */}
+            <nav className="flex items-center gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm md:text-base max-w-[70vw] sm:max-w-none overflow-x-auto sm:overflow-visible">
+              <Link
+                href="/catalog"
+                className="font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap"
+              >
+                Каталог
+              </Link>
+              <Link
+                href="/profile"
+                className="font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap"
+                aria-label="Профиль"
+              >
+                Профиль
+              </Link>
+              <Link
+                href="/contacts"
+                className="font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap"
+              >
+                Контакты
+              </Link>
+            </nav>
 
-          {/* RIGHT: Actions (Cart) */}
-          <div className="flex items-center flex-shrink-0">
-            <CartIcon />
+            {/* Cart */}
+            <div className="flex items-center flex-shrink-0">
+              <CartIcon />
+            </div>
           </div>
         </div>
       </div>
