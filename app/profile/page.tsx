@@ -3,17 +3,15 @@
 import { useState, useEffect } from 'react';
 import Card from '@/app/components/Card';
 
-interface UserData {
-  tgId: string;
-  referralCode: string;
-  referredById: string | null;
-}
-
 export default function ProfilePage() {
-  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [referralLink, setReferralLink] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // Check for debug mode
+  const isDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
 
   useEffect(() => {
     // Check if Web Share API is available
@@ -30,31 +28,42 @@ export default function ProfilePage() {
 
       try {
         const tg = (window as any).Telegram?.WebApp;
-        const initData = tg?.initData || '';
-        const initDataUnsafe = tg?.initDataUnsafe || null;
-        const startParam = initDataUnsafe?.start_param || 
-          new URLSearchParams(window.location.search).get('tgWebAppStartParam') || 
-          null;
+        const initData = tg?.initData ?? '';
+        const startParamFromInit = tg?.initDataUnsafe?.start_param;
+        const startParamFromUrl = new URLSearchParams(window.location.search).get('tgWebAppStartParam');
+        const startParam = startParamFromInit || startParamFromUrl || '';
+
+        // If no initData, don't call API, show placeholder
+        if (!initData) {
+          setLoading(false);
+          setReferralLink(null);
+          return;
+        }
 
         const response = await fetch('/api/me', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            initData,
-            startParam,
-          }),
+          body: JSON.stringify({ initData, startParam }),
         });
 
         if (response.ok) {
           const data = await response.json();
           if (data.user?.referralCode) {
-            setReferralCode(data.user.referralCode);
+            const link = `https://t.me/GameHubb_TopUp_bot?startapp=r${data.user.referralCode}`;
+            setReferralLink(link);
+          } else {
+            setReferralLink(null);
           }
+        } else {
+          setError('Не удалось загрузить данные');
+          setReferralLink(null);
         }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('Ошибка при загрузке данных');
+        setReferralLink(null);
       } finally {
         setLoading(false);
       }
@@ -63,10 +72,6 @@ export default function ProfilePage() {
     fetchUserData();
   }, []);
 
-  const referralLink = referralCode 
-    ? `https://t.me/GameHubb_TopUp_bot?startapp=r${referralCode}`
-    : null;
-
   const handleCopy = async () => {
     if (!referralLink) return;
 
@@ -74,8 +79,9 @@ export default function ProfilePage() {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy:', error);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      setError('Не удалось скопировать ссылку');
     }
   };
 
@@ -88,12 +94,28 @@ export default function ProfilePage() {
         text: 'Получи скидку 5% на первую покупку!',
         url: referralLink,
       });
-    } catch (error) {
+    } catch (err) {
       // User cancelled or share failed, fallback to copy
-      if ((error as Error).name !== 'AbortError') {
+      if ((err as Error).name !== 'AbortError') {
         handleCopy();
       }
     }
+  };
+
+  // Debug info
+  const getDebugInfo = () => {
+    if (typeof window === 'undefined') return null;
+    const tg = (window as any).Telegram?.WebApp;
+    const initData = tg?.initData ?? '';
+    const startParamFromInit = tg?.initDataUnsafe?.start_param;
+    const startParamFromUrl = new URLSearchParams(window.location.search).get('tgWebAppStartParam');
+    const startParam = startParamFromInit || startParamFromUrl || '';
+
+    return {
+      hasInitData: initData.length > 0,
+      startParam: startParam || 'none',
+      error: error || 'none',
+    };
   };
 
   return (
@@ -110,9 +132,18 @@ export default function ProfilePage() {
             Начисления и скидка включатся после запуска программы.
           </p>
 
+          {isDebug && (() => {
+            const debugInfo = getDebugInfo();
+            return debugInfo ? (
+              <div className="mb-4 p-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-xs text-zinc-400">
+                Telegram initData: {debugInfo.hasInitData ? 'yes' : 'no'}; startParam: {debugInfo.startParam}; error: {debugInfo.error}
+              </div>
+            ) : null;
+          })()}
+
           {loading ? (
             <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
-              <p className="text-sm text-zinc-400 text-center">Загрузка...</p>
+              <p className="text-sm text-zinc-400 text-center">Загружаем ссылку…</p>
             </div>
           ) : referralLink ? (
             <div className="space-y-4">
