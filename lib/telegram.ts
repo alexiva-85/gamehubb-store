@@ -86,3 +86,42 @@ export function getStartParamFromInitData(initData: string): string | null {
   }
 }
 
+/**
+ * Send a message via Telegram Bot API
+ * @param botToken - Telegram bot token
+ * @param chatId - Chat ID (can be number or string)
+ * @param text - Message text
+ * @returns Promise with API response
+ */
+export async function sendTelegramMessage(
+  botToken: string,
+  chatId: string | number,
+  text: string
+): Promise<any> {
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: 'HTML',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Telegram API error: ${response.status} - ${JSON.stringify(errorData)}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending Telegram message:', error);
+    throw error;
+  }
+}
+
