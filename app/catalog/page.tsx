@@ -1,42 +1,33 @@
-import { prisma } from '@/lib/prisma';
-import { fallbackProducts } from '@/lib/fallbackProducts';
-import CatalogProducts from './CatalogProducts';
+import Link from "next/link";
+import { games } from "@/lib/games";
 
-async function getProducts() {
-  try {
-    const dbProducts = await prisma.product.findMany({
-      where: {
-        isActive: true,
-      },
-      orderBy: [
-        { category: 'asc' },
-        { title: 'asc' },
-      ],
-    });
+export const metadata = {
+  title: "Каталог игр — GameHubb",
+  description: "Выберите игру и перейдите к товарам для пополнения.",
+};
 
-    if (dbProducts.length > 0) {
-      return { source: 'db' as const, items: dbProducts };
-    }
-
-    return { source: 'fallback' as const, items: fallbackProducts };
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return { source: 'fallback' as const, items: fallbackProducts };
-  }
-}
-
-export default async function CatalogPage() {
-  const { source, items } = await getProducts();
-
+export default function CatalogPage() {
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">Каталог товаров</h1>
-      {source === 'fallback' && (
-        <div className="mb-4 text-sm text-gray-500">
-          Используются резервные товары (БД пуста)
-        </div>
-      )}
-      <CatalogProducts products={items} />
-    </div>
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">Выберите игру</h1>
+        <p className="text-sm text-muted-foreground">
+          Далее вы увидите товары и варианты пополнения для выбранной игры.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {games.map((g) => (
+          <Link
+            key={g.slug}
+            href={`/catalog/${g.slug}`}
+            className="rounded-xl border p-4 hover:bg-muted/50 transition"
+          >
+            <div className="text-lg font-ubtitle}</div>
+            ) : null}
+          </Link>
+        ))}
+      </div>
+    </main>
   );
 }
