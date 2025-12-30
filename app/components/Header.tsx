@@ -7,15 +7,17 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <picture>
-              <source srcSet="/brand/logo-mark.webp" type="image/webp" />
-              <img
-                src="/brand/logo-mark.png"
-                alt="GameHubb"
-                className="h-10 w-10 md:h-12 md:w-12 rounded-lg ring-1 ring-white/10 object-contain"
-              />
-            </picture>
-            <span className="text-base md:text-lg font-semibold tracking-tight text-white">
+            <div className="h-12 w-12 md:h-14 md:w-14 overflow-hidden rounded-xl ring-1 ring-white/10 bg-black/20 flex items-center justify-center">
+              <picture className="block">
+                <source srcSet="/brand/logo-mark.webp" type="image/webp" />
+                <img
+                  src="/brand/logo-mark.png"
+                  alt="GameHubb"
+                  className="h-full w-full object-contain scale-[1.35] block"
+                />
+              </picture>
+            </div>
+            <span className="text-base md:text-xl font-semibold tracking-tight text-white">
               GameHubb
             </span>
           </Link>
