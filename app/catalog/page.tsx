@@ -10,8 +10,8 @@ export default function CatalogPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Выберите игру</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold text-white">Выберите игру</h1>
+        <p className="text-sm text-[#a0a0a0]">
           Далее вы увидите товары и варианты пополнения для выбранной игры.
         </p>
       </div>
@@ -21,9 +21,9 @@ export default function CatalogPage() {
           <Link
             key={g.slug}
             href={`/catalog/${g.slug}`}
-            className="rounded-xl border p-4 hover:bg-muted/50 transition"
+            className="rounded-xl border border-[#3a3a3a] bg-[#2a2a2a] p-6 hover:border-[#4DA3FF] hover:bg-[#2f2f2f] transition-all"
           >
-            <div className="text-lg font-medium">{g.name}</div>
+            <div className="text-lg font-medium text-white">{g.name}</div>
           </Link>
         ))}
       </div>

@@ -55,7 +55,7 @@ export default function GameCatalogClient({
             placeholder="Поиск товаров..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-[#3a3a3a] rounded-lg bg-[#2a2a2a] text-white placeholder-[#666] focus:outline-none focus:ring-2 focus:ring-[#4DA3FF] focus:border-[#4DA3FF]"
           />
         </div>
 
@@ -67,8 +67,8 @@ export default function GameCatalogClient({
               onClick={() => setSelectedCategory(category)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 selectedCategory === category
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-[#4DA3FF] text-white hover:bg-[#3d8fdf]'
+                  : 'bg-[#2a2a2a] text-[#d0d0d0] border border-[#3a3a3a] hover:bg-[#333] hover:border-[#4DA3FF]'
               }`}
             >
               {category}
@@ -83,10 +83,10 @@ export default function GameCatalogClient({
           {filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 bg-white dark:bg-black hover:shadow-md transition-shadow"
+              className="border border-[#3a3a3a] rounded-lg p-4 bg-[#2a2a2a] hover:border-[#4DA3FF] hover:bg-[#2f2f2f] transition-all"
             >
               {product.imageUrl && (
-                <div className="w-full h-32 mb-3 bg-gray-100 dark:bg-gray-800 rounded overflow-hidden">
+                <div className="w-full h-32 mb-3 bg-[#1a1a1a] rounded overflow-hidden">
                   <img
                     src={product.imageUrl}
                     alt={product.title}
@@ -94,14 +94,14 @@ export default function GameCatalogClient({
                   />
                 </div>
               )}
-              <h3 className="font-semibold text-lg mb-1">{product.title}</h3>
+              <h3 className="font-semibold text-lg mb-1 text-white">{product.title}</h3>
               {product.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                <p className="text-sm text-[#a0a0a0] mb-3 line-clamp-2">
                   {product.description}
                 </p>
               )}
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">
+                <span className="text-2xl font-bold text-white">
                   {product.priceRub}₽
                 </span>
                 <button
@@ -113,13 +113,13 @@ export default function GameCatalogClient({
                       gameSlug: product.gameSlug || '',
                     })
                   }
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  className="px-4 py-2 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors text-sm font-medium"
                 >
                   В корзину
                 </button>
               </div>
               {product.category && (
-                <span className="inline-block mt-2 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-400">
+                <span className="inline-block mt-2 px-2 py-1 text-xs bg-[#1a1a1a] border border-[#3a3a3a] rounded text-[#4DA3FF]">
                   {product.category}
                 </span>
               )}
@@ -127,7 +127,7 @@ export default function GameCatalogClient({
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-gray-600 dark:text-gray-400">
+        <div className="text-center py-12 text-[#a0a0a0]">
           <p>Товары не найдены</p>
         </div>
       )}

@@ -9,7 +9,7 @@ export default function CartIcon() {
   return (
     <Link
       href="/cart"
-      className="relative flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      className="relative flex items-center justify-center w-10 h-10 rounded-lg hover:bg-[#2a2a2a] transition-colors"
       aria-label="Корзина"
     >
       <svg
@@ -18,7 +18,7 @@ export default function CartIcon() {
         viewBox="0 0 24 24"
         strokeWidth={1.5}
         stroke="currentColor"
-        className="w-6 h-6"
+        className="w-6 h-6 text-white"
       >
         <path
           strokeLinecap="round"
@@ -27,7 +27,7 @@ export default function CartIcon() {
         />
       </svg>
       {itemsCount > 0 && (
-        <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+        <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-[#4DA3FF] rounded-full">
           {itemsCount > 99 ? '99+' : itemsCount}
         </span>
       )}

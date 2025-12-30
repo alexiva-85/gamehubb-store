@@ -9,12 +9,12 @@ export default function CartPage() {
   if (cart.items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Корзина</h1>
+        <h1 className="text-3xl font-bold mb-6 text-white">Корзина</h1>
         <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Ваша корзина пуста</p>
+          <p className="text-[#a0a0a0] mb-4">Ваша корзина пуста</p>
           <Link
             href="/catalog"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-block px-6 py-3 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors"
           >
             Перейти в каталог
           </Link>
@@ -25,7 +25,7 @@ export default function CartPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Корзина</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white">Корзина</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart items */}
@@ -33,18 +33,18 @@ export default function CartPage() {
           {cart.items.map((item) => (
             <div
               key={item.id}
-              className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 bg-white dark:bg-black"
+              className="border border-[#3a3a3a] rounded-lg p-4 bg-[#2a2a2a]"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">{item.title}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <h3 className="font-semibold text-lg mb-1 text-white">{item.title}</h3>
+                  <p className="text-sm text-[#a0a0a0] mb-2">
                     {item.priceRub}₽ за единицу
                   </p>
                 </div>
                 <button
                   onClick={() => removeItem(item.id)}
-                  className="ml-4 text-gray-400 hover:text-red-500 transition-colors"
+                  className="ml-4 text-[#666] hover:text-[#ff4444] transition-colors"
                   aria-label="Удалить товар"
                 >
                   <svg
@@ -68,7 +68,7 @@ export default function CartPage() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    className="w-8 h-8 flex items-center justify-center border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="w-8 h-8 flex items-center justify-center border border-[#3a3a3a] rounded hover:bg-[#333] hover:border-[#4DA3FF] transition-colors text-white"
                     aria-label="Уменьшить количество"
                   >
                     <svg
@@ -82,10 +82,10 @@ export default function CartPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
                     </svg>
                   </button>
-                  <span className="text-lg font-medium w-12 text-center">{item.quantity}</span>
+                  <span className="text-lg font-medium w-12 text-center text-white">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    className="w-8 h-8 flex items-center justify-center border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="w-8 h-8 flex items-center justify-center border border-[#3a3a3a] rounded hover:bg-[#333] hover:border-[#4DA3FF] transition-colors text-white"
                     aria-label="Увеличить количество"
                   >
                     <svg
@@ -100,7 +100,7 @@ export default function CartPage() {
                     </svg>
                   </button>
                 </div>
-                <div className="text-xl font-bold">
+                <div className="text-xl font-bold text-white">
                   {item.priceRub * item.quantity}₽
                 </div>
               </div>
@@ -110,27 +110,27 @@ export default function CartPage() {
 
         {/* Order summary */}
         <div className="lg:col-span-1">
-          <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-6 bg-white dark:bg-black sticky top-4">
-            <h2 className="text-xl font-bold mb-4">Итого</h2>
+          <div className="border border-[#3a3a3a] rounded-lg p-6 bg-[#2a2a2a] sticky top-4">
+            <h2 className="text-xl font-bold mb-4 text-white">Итого</h2>
             <div className="space-y-2 mb-4">
               {cart.items.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-[#a0a0a0]">
                     {item.title} × {item.quantity}
                   </span>
-                  <span>{item.priceRub * item.quantity}₽</span>
+                  <span className="text-white">{item.priceRub * item.quantity}₽</span>
                 </div>
               ))}
             </div>
-            <div className="border-t border-gray-200 dark:border-gray-800 pt-4 mb-4">
-              <div className="flex justify-between text-xl font-bold">
+            <div className="border-t border-[#3a3a3a] pt-4 mb-4">
+              <div className="flex justify-between text-xl font-bold text-white">
                 <span>Всего:</span>
                 <span>{total}₽</span>
               </div>
             </div>
             <Link
               href="/checkout"
-              className="w-full block text-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="w-full block text-center px-6 py-3 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors font-medium"
             >
               Перейти к оформлению
             </Link>
