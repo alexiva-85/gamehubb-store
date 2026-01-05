@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Card from '@/app/components/Card';
 
 interface ReferralSummary {
@@ -32,6 +33,10 @@ export default function ProfilePage() {
 
   // Check for debug mode
   const isDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
+
+  // Detect Telegram mode vs Web mode
+  const isTelegramMode = typeof window !== 'undefined' && 
+    !!(window as any).Telegram?.WebApp?.initData;
 
   useEffect(() => {
     // Check if Web Share API is available
@@ -91,11 +96,11 @@ export default function ProfilePage() {
 
     fetchUserData();
 
-    // Fetch referral summary if feature flag is enabled
-    if (isReferralProgramEnabled) {
+    // Fetch referral summary if feature flag is enabled and in Telegram mode
+    if (isReferralProgramEnabled && isTelegramMode) {
       fetchReferralSummary();
     }
-  }, [isReferralProgramEnabled]);
+  }, [isReferralProgramEnabled, isTelegramMode]);
 
   const handleCopy = async () => {
     if (!referralLink) return;
@@ -226,102 +231,131 @@ export default function ProfilePage() {
 
       <div className="space-y-6">
         <Card>
-          <h2 className="text-xl font-medium mb-2 text-zinc-100">Пригласи друга</h2>
-          <p className="text-sm text-zinc-300 mb-4">
-            Друг получит скидку 5% на первую покупку. Ты получишь 5% с его первой покупки и 1% с последующих.
-          </p>
-          {!isReferralProgramEnabled && (
-            <p className="text-xs text-zinc-400 mb-4">
-              Начисления и скидка включатся после запуска программы.
-            </p>
-          )}
-
-          {isReferralProgramEnabled && summaryLoading && (
-            <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg">
-              <p className="text-sm text-zinc-400 text-center">Загружаем статистику…</p>
-            </div>
-          )}
-
-          {isReferralProgramEnabled && summaryError && !summaryLoading && (
-            <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
-              <p className="text-sm text-zinc-300">{summaryError.message}</p>
-              <p className="text-xs text-zinc-500">
-                Проверь: включены ли флаги и открыт ли магазин внутри Telegram.
+          {isTelegramMode ? (
+            // Telegram Mode: show referral link and stats
+            <>
+              <h2 className="text-xl font-medium mb-2 text-zinc-100">Пригласи друга</h2>
+              <p className="text-sm text-zinc-300 mb-4">
+                Друг получит скидку 5% на первую покупку. Ты получишь 5% с его первой покупки и 1% с последующих.
               </p>
-              <button
-                onClick={handleRetrySummary}
-                className="w-full mt-2 px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium"
-              >
-                Повторить
-              </button>
-            </div>
-          )}
-
-          {isReferralProgramEnabled && referralSummary && !summaryLoading && !summaryError && (
-            <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Приглашено друзей:</span>
-                <span className="text-zinc-100 font-medium">{referralSummary.referralsCount}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Заблокировано:</span>
-                <span className="text-zinc-100 font-medium">{(referralSummary.rewards.lockedAmount / 100).toFixed(2)}₽</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Доступно к выводу:</span>
-                <span className="text-zinc-100 font-medium">{(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽</span>
-              </div>
-              <div className="pt-2 border-t border-[#3a3a3a]">
-                <p className="text-xs text-zinc-500">{referralSummary.note}</p>
-              </div>
-            </div>
-          )}
-
-          {isDebug && (() => {
-            const debugInfo = getDebugInfo();
-            return debugInfo ? (
-              <div className="mb-4 p-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-xs text-zinc-400">
-                Telegram initData: {debugInfo.hasInitData ? 'yes' : 'no'}; startParam: {debugInfo.startParam}; error: {debugInfo.error}
-              </div>
-            ) : null;
-          })()}
-
-          {loading ? (
-            <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
-              <p className="text-sm text-zinc-400 text-center">Загружаем ссылку…</p>
-            </div>
-          ) : referralLink ? (
-            <div className="space-y-4">
-              <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-3">
-                <p className="text-xs text-zinc-400 mb-1">Твоя реферальная ссылка:</p>
-                <p className="text-sm text-zinc-200 break-all font-mono">
-                  {referralLink}
+              {!isReferralProgramEnabled && (
+                <p className="text-xs text-zinc-400 mb-4">
+                  Начисления и скидка включатся после запуска программы.
                 </p>
-              </div>
+              )}
 
-              <div className="flex gap-3">
-                {canShare && (
+              {isReferralProgramEnabled && summaryLoading && (
+                <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg">
+                  <p className="text-sm text-zinc-400 text-center">Загружаем статистику…</p>
+                </div>
+              )}
+
+              {isReferralProgramEnabled && summaryError && !summaryLoading && (
+                <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
+                  <p className="text-sm text-zinc-300">{summaryError.message}</p>
+                  <p className="text-xs text-zinc-500">
+                    Проверь: включены ли флаги и открыт ли магазин внутри Telegram.
+                  </p>
                   <button
-                    onClick={handleShare}
-                    className="flex-1 px-4 py-2 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors text-sm font-medium"
+                    onClick={handleRetrySummary}
+                    className="w-full mt-2 px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium"
                   >
-                    Поделиться
+                    Повторить
                   </button>
-                )}
-                <button
-                  onClick={handleCopy}
-                  className="flex-1 px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium"
-                >
-                  {copied ? 'Скопировано' : 'Скопировать'}
-                </button>
-              </div>
-            </div>
+                </div>
+              )}
+
+              {isReferralProgramEnabled && referralSummary && !summaryLoading && !summaryError && (
+                <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-400">Приглашено друзей:</span>
+                    <span className="text-zinc-100 font-medium">{referralSummary.referralsCount}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-400">Заблокировано:</span>
+                    <span className="text-zinc-100 font-medium">{(referralSummary.rewards.lockedAmount / 100).toFixed(2)}₽</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-400">Доступно к выводу:</span>
+                    <span className="text-zinc-100 font-medium">{(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽</span>
+                  </div>
+                  <div className="pt-2 border-t border-[#3a3a3a]">
+                    <p className="text-xs text-zinc-500">{referralSummary.note}</p>
+                  </div>
+                </div>
+              )}
+
+              {isDebug && (() => {
+                const debugInfo = getDebugInfo();
+                return debugInfo ? (
+                  <div className="mb-4 p-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-xs text-zinc-400">
+                    Telegram initData: {debugInfo.hasInitData ? 'yes' : 'no'}; startParam: {debugInfo.startParam}; error: {debugInfo.error}
+                  </div>
+                ) : null;
+              })()}
+
+              {loading ? (
+                <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
+                  <p className="text-sm text-zinc-400 text-center">Загружаем ссылку…</p>
+                </div>
+              ) : referralLink ? (
+                <div className="space-y-4">
+                  <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-3">
+                    <p className="text-xs text-zinc-400 mb-1">Твоя реферальная ссылка:</p>
+                    <p className="text-sm text-zinc-200 break-all font-mono">
+                      {referralLink}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    {canShare && (
+                      <button
+                        onClick={handleShare}
+                        className="flex-1 px-4 py-2 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors text-sm font-medium"
+                      >
+                        Поделиться
+                      </button>
+                    )}
+                    <button
+                      onClick={handleCopy}
+                      className="flex-1 px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium"
+                    >
+                      {copied ? 'Скопировано' : 'Скопировать'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
+                  <p className="text-sm text-zinc-400 text-center">
+                    Твоя ссылка появится здесь после запуска реферальной программы.
+                  </p>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
-              <p className="text-sm text-zinc-400 text-center">
-                Твоя ссылка появится здесь после запуска реферальной программы.
+            // Web Mode: show CTA to open in Telegram
+            <>
+              <h2 className="text-xl font-medium mb-2 text-zinc-100">Реферальная программа</h2>
+              <p className="text-sm text-zinc-300 mb-4">
+                Реферальная ссылка и статистика доступны в Telegram. Открой магазин внутри Telegram, чтобы получить свою ссылку.
               </p>
-            </div>
+              <div className="space-y-3">
+                <a
+                  href="https://t.me/GameHubb_TopUp_bot?startapp=profile"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full px-4 py-3 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors text-sm font-medium text-center"
+                >
+                  Открыть в Telegram
+                </a>
+                <Link
+                  href="/terms"
+                  className="block w-full px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium text-center"
+                >
+                  Как это работает
+                </Link>
+              </div>
+            </>
           )}
         </Card>
       </div>
