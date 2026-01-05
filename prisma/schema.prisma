@@ -17,6 +17,26 @@ enum Provider {
   AUTOMATED
 }
 
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELED
+  REFUNDED
+}
+
+enum ReferralRewardStatus {
+  LOCKED
+  AVAILABLE
+  PAID
+  CANCELED
+}
+
+enum ReferralRewardType {
+  FIRST_ORDER
+  SUBSEQUENT_ORDER
+}
+
 model Product {
   id          String   @id @default(uuid())
   sku         String   @unique
@@ -47,8 +67,57 @@ model User {
   referredBy User?  @relation("UserReferrals", fields: [referredById], references: [id])
   referrals  User[] @relation("UserReferrals")
 
+  orders          Order[]           @relation("UserOrders")
+  inviterRewards  ReferralEvent[]   @relation("InviterRewards")
+  refereeRewards  ReferralEvent[]   @relation("RefereeRewards")
+
   @@index([tgId])
   @@index([referralCode])
   @@index([referredById])
   @@map("users")
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  totalAmount   Int         @map("total_amount")
+  discountAmount Int        @default(0) @map("discount_amount")
+  status        OrderStatus @default(PENDING)
+  paidAt        DateTime?   @map("paid_at")
+  fulfilledAt   DateTime?  @map("fulfilled_at")
+  refundedAt    DateTime?  @map("refunded_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  user          User            @relation("UserOrders", fields: [userId], references: [id])
+  referralEvents ReferralEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([paidAt])
+  @@map("orders")
+}
+
+model ReferralEvent {
+  id          String              @id @default(uuid())
+  orderId     String              @map("order_id")
+  inviterId  String              @map("inviter_id")
+  refereeId  String              @map("referee_id")
+  percentage Int
+  amount     Int
+  rewardType ReferralRewardType  @map("reward_type")
+  status     ReferralRewardStatus @default(LOCKED)
+  lockedUntil DateTime?           @map("locked_until")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  paidOutAt  DateTime?           @map("paid_out_at")
+  canceledAt DateTime?            @map("canceled_at")
+
+  order   Order @relation(fields: [orderId], references: [id])
+  inviter User  @relation("InviterRewards", fields: [inviterId], references: [id])
+  referee User  @relation("RefereeRewards", fields: [refereeId], references: [id])
+
+  @@unique([orderId, inviterId, rewardType])
+  @@index([inviterId, status])
+  @@index([lockedUntil])
+  @@map("referral_events")
 }

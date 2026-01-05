@@ -3,12 +3,31 @@
 import { useState, useEffect } from 'react';
 import Card from '@/app/components/Card';
 
+interface ReferralSummary {
+  referralCode: string;
+  referralsCount: number;
+  rewards: {
+    lockedAmount: number;
+    availableAmount: number;
+    paidAmount: number;
+    canceledAmount: number;
+  };
+  note: string;
+}
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [referralLink, setReferralLink] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [canShare, setCanShare] = useState(false);
+  const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
+  // Check feature flag (client-side)
+  const isReferralProgramEnabled = typeof window !== 'undefined' 
+    ? process.env.NEXT_PUBLIC_REFERRAL_PROGRAM_ENABLED === 'true'
+    : false;
 
   // Check for debug mode
   const isDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
@@ -70,7 +89,54 @@ export default function ProfilePage() {
     };
 
     fetchUserData();
-  }, []);
+
+    // Fetch referral summary if feature flag is enabled
+    if (isReferralProgramEnabled) {
+      const fetchReferralSummary = async () => {
+        if (typeof window === 'undefined') return;
+
+        try {
+          setSummaryLoading(true);
+          const tg = (window as any).Telegram?.WebApp;
+          const initData = tg?.initData ?? '';
+
+          if (!initData) {
+            setSummaryLoading(false);
+            return;
+          }
+
+          const response = await fetch('/api/referrals/summary', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ initData }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.enabled === false) {
+              // Feature flag disabled on server
+              setReferralSummary(null);
+            } else {
+              setReferralSummary(data);
+            }
+          } else if (response.status === 404) {
+            // Feature disabled or not found
+            setReferralSummary(null);
+          } else {
+            console.error('Failed to fetch referral summary');
+          }
+        } catch (err) {
+          console.error('Error fetching referral summary:', err);
+        } finally {
+          setSummaryLoading(false);
+        }
+      };
+
+      fetchReferralSummary();
+    }
+  }, [isReferralProgramEnabled]);
 
   const handleCopy = async () => {
     if (!referralLink) return;
@@ -128,9 +194,37 @@ export default function ProfilePage() {
           <p className="text-sm text-zinc-300 mb-4">
             Друг получит скидку 5% на первую покупку. Ты получишь 5% с его первой покупки и 1% с последующих.
           </p>
-          <p className="text-xs text-zinc-400 mb-4">
-            Начисления и скидка включатся после запуска программы.
-          </p>
+          {!isReferralProgramEnabled && (
+            <p className="text-xs text-zinc-400 mb-4">
+              Начисления и скидка включатся после запуска программы.
+            </p>
+          )}
+
+          {isReferralProgramEnabled && summaryLoading && (
+            <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg">
+              <p className="text-sm text-zinc-400 text-center">Загружаем статистику…</p>
+            </div>
+          )}
+
+          {isReferralProgramEnabled && referralSummary && !summaryLoading && (
+            <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Приглашено друзей:</span>
+                <span className="text-zinc-100 font-medium">{referralSummary.referralsCount}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Заблокировано:</span>
+                <span className="text-zinc-100 font-medium">{(referralSummary.rewards.lockedAmount / 100).toFixed(2)}₽</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Доступно к выводу:</span>
+                <span className="text-zinc-100 font-medium">{(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽</span>
+              </div>
+              <div className="pt-2 border-t border-[#3a3a3a]">
+                <p className="text-xs text-zinc-500">{referralSummary.note}</p>
+              </div>
+            </div>
+          )}
 
           {isDebug && (() => {
             const debugInfo = getDebugInfo();
