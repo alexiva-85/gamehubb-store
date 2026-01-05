@@ -8,15 +8,12 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* LEFT: Brand */}
           <Link href="/" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
-            <div className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 overflow-hidden rounded-[12px] border border-white/[0.08] bg-black/20 flex items-center justify-center flex-shrink-0 p-1">
-              <picture>
-                <source srcSet="/brand/logo-glyph-256.png" media="(min-width: 768px)" />
-                <img
-                  src="/brand/logo-glyph-128.png"
-                  alt="GameHubb"
-                  className="w-full h-full object-contain block"
-                />
-              </picture>
+            <div className="h-10 w-10 sm:h-11 sm:w-11 overflow-hidden rounded-[12px] border border-white/[0.08] bg-black/20 flex items-center justify-center flex-shrink-0 p-1">
+              <img
+                src="/brand/logo-mark-nobg.png"
+                alt="GameHubb"
+                className="w-full h-full object-contain block"
+              />
             </div>
             <span className="text-sm sm:text-base md:text-xl font-semibold tracking-tight text-white truncate hidden sm:block">
               GameHubb
