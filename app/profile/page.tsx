@@ -25,6 +25,13 @@ export default function ProfilePage() {
   const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<{ status: number | null; message: string } | null>(null);
+  const [withdrawalRequest, setWithdrawalRequest] = useState<any>(null);
+  const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+  const [showWithdrawalForm, setShowWithdrawalForm] = useState(false);
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [withdrawalAsset, setWithdrawalAsset] = useState<'TON' | 'USDT_TON'>('TON');
+  const [withdrawalAddress, setWithdrawalAddress] = useState('');
+  const [withdrawalSubmitting, setWithdrawalSubmitting] = useState(false);
 
   // Check feature flag (client-side)
   const isReferralProgramEnabled = typeof window !== 'undefined' 
@@ -99,6 +106,7 @@ export default function ProfilePage() {
     // Fetch referral summary if feature flag is enabled and in Telegram mode
     if (isReferralProgramEnabled && isTelegramMode) {
       fetchReferralSummary();
+      fetchWithdrawalRequest();
     }
   }, [isReferralProgramEnabled, isTelegramMode]);
 
@@ -209,6 +217,90 @@ export default function ProfilePage() {
     fetchReferralSummary();
   };
 
+  const fetchWithdrawalRequest = async () => {
+    if (typeof window === 'undefined') return;
+
+    const tg = (window as any).Telegram?.WebApp;
+    const initData = tg?.initData ?? '';
+
+    if (!initData) return;
+
+    try {
+      setWithdrawalLoading(true);
+      const response = await fetch('/api/withdrawals/my', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ initData }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setWithdrawalRequest(data.request);
+      }
+    } catch (err) {
+      console.error('Error fetching withdrawal request:', err);
+    } finally {
+      setWithdrawalLoading(false);
+    }
+  };
+
+  const handleWithdrawalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (typeof window === 'undefined') return;
+
+    const tg = (window as any).Telegram?.WebApp;
+    const initData = tg?.initData ?? '';
+
+    if (!initData) return;
+
+    const amount = parseInt(withdrawalAmount, 10);
+    if (isNaN(amount) || amount < 500) {
+      alert('Минимальная сумма вывода: 500₽');
+      return;
+    }
+
+    if (!withdrawalAddress.trim()) {
+      alert('Введите TON адрес');
+      return;
+    }
+
+    try {
+      setWithdrawalSubmitting(true);
+      const response = await fetch('/api/withdrawals/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          initData,
+          amountRub: amount,
+          asset: withdrawalAsset,
+          tonAddress: withdrawalAddress.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setWithdrawalRequest(data);
+        setShowWithdrawalForm(false);
+        setWithdrawalAmount('');
+        setWithdrawalAddress('');
+        alert('Заявка создана успешно');
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Ошибка создания заявки');
+      }
+    } catch (err) {
+      console.error('Error creating withdrawal request:', err);
+      alert('Ошибка создания заявки');
+    } finally {
+      setWithdrawalSubmitting(false);
+    }
+  };
+
   // Debug info
   const getDebugInfo = () => {
     if (typeof window === 'undefined') return null;
@@ -236,7 +328,7 @@ export default function ProfilePage() {
             <>
               <h2 className="text-xl font-medium mb-2 text-zinc-100">Пригласи друга</h2>
               <p className="text-sm text-zinc-300 mb-4">
-                Друг получит скидку 5% на первую покупку. Ты получишь 5% с его первой покупки и 1% с последующих.
+                Друг получит скидку 5% на первую покупку. Ты получишь 7% с его первой покупки и 2% с последующих.
               </p>
               {!isReferralProgramEnabled && (
                 <p className="text-xs text-zinc-400 mb-4">
@@ -266,23 +358,145 @@ export default function ProfilePage() {
               )}
 
               {isReferralProgramEnabled && referralSummary && !summaryLoading && !summaryError && (
-                <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-400">Приглашено друзей:</span>
-                    <span className="text-zinc-100 font-medium">{referralSummary.referralsCount}</span>
+                <>
+                  <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">Приглашено друзей:</span>
+                      <span className="text-zinc-100 font-medium">{referralSummary.referralsCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">Заблокировано:</span>
+                      <span className="text-zinc-100 font-medium">{(referralSummary.rewards.lockedAmount / 100).toFixed(2)}₽</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-zinc-400">Доступно к выводу:</span>
+                      <span className="text-zinc-100 font-medium">{(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽</span>
+                    </div>
+                    <div className="pt-2 border-t border-[#3a3a3a]">
+                      <p className="text-xs text-zinc-500">{referralSummary.note}</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-400">Заблокировано:</span>
-                    <span className="text-zinc-100 font-medium">{(referralSummary.rewards.lockedAmount / 100).toFixed(2)}₽</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-zinc-400">Доступно к выводу:</span>
-                    <span className="text-zinc-100 font-medium">{(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽</span>
-                  </div>
-                  <div className="pt-2 border-t border-[#3a3a3a]">
-                    <p className="text-xs text-zinc-500">{referralSummary.note}</p>
-                  </div>
-                </div>
+
+                  {/* Withdrawal Request Section */}
+                  {withdrawalLoading ? (
+                    <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg">
+                      <p className="text-sm text-zinc-400 text-center">Загрузка заявки…</p>
+                    </div>
+                  ) : withdrawalRequest ? (
+                    <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
+                      <h3 className="text-sm font-medium text-zinc-100">Заявка на вывод</h3>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Сумма:</span>
+                          <span className="text-zinc-100">{withdrawalRequest.amountRub}₽ ({withdrawalRequest.asset})</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-zinc-400">Статус:</span>
+                          <span className={`font-medium ${
+                            withdrawalRequest.status === 'PENDING' ? 'text-yellow-400' :
+                            withdrawalRequest.status === 'APPROVED' ? 'text-blue-400' :
+                            withdrawalRequest.status === 'PAID' ? 'text-green-400' :
+                            'text-red-400'
+                          }`}>
+                            {withdrawalRequest.status === 'PENDING' ? 'Ожидает рассмотрения' :
+                             withdrawalRequest.status === 'APPROVED' ? 'Одобрена' :
+                             withdrawalRequest.status === 'PAID' ? 'Оплачена' :
+                             'Отклонена'}
+                          </span>
+                        </div>
+                        {withdrawalRequest.adminNote && (
+                          <div>
+                            <span className="text-zinc-400">Примечание:</span>
+                            <p className="text-zinc-200 text-xs mt-1">{withdrawalRequest.adminNote}</p>
+                          </div>
+                        )}
+                        {withdrawalRequest.txHash && (
+                          <div>
+                            <span className="text-zinc-400">TX Hash:</span>
+                            <p className="text-zinc-200 font-mono text-xs break-all mt-1">{withdrawalRequest.txHash}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    referralSummary.rewards.availableAmount >= 50000 && (
+                      <>
+                        {!showWithdrawalForm ? (
+                          <button
+                            onClick={() => {
+                              setShowWithdrawalForm(true);
+                              setWithdrawalAmount((referralSummary.rewards.availableAmount / 100).toFixed(0));
+                            }}
+                            className="w-full mb-4 px-4 py-2 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors text-sm font-medium"
+                          >
+                            Запросить вывод
+                          </button>
+                        ) : (
+                          <form onSubmit={handleWithdrawalSubmit} className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-3">
+                            <h3 className="text-sm font-medium text-zinc-100">Заявка на вывод</h3>
+                            <div>
+                              <label className="block text-xs text-zinc-400 mb-1">Сумма (₽)</label>
+                              <input
+                                type="number"
+                                value={withdrawalAmount}
+                                onChange={(e) => setWithdrawalAmount(e.target.value)}
+                                min="500"
+                                max={(referralSummary.rewards.availableAmount / 100).toFixed(0)}
+                                required
+                                className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-white text-sm"
+                              />
+                              <p className="text-xs text-zinc-500 mt-1">
+                                Доступно: {(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-400 mb-1">Актив</label>
+                              <select
+                                value={withdrawalAsset}
+                                onChange={(e) => setWithdrawalAsset(e.target.value as 'TON' | 'USDT_TON')}
+                                className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-white text-sm"
+                              >
+                                <option value="TON">TON</option>
+                                <option value="USDT_TON">USDT (TON)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-zinc-400 mb-1">TON адрес</label>
+                              <input
+                                type="text"
+                                value={withdrawalAddress}
+                                onChange={(e) => setWithdrawalAddress(e.target.value)}
+                                required
+                                placeholder="UQ..."
+                                className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-white text-sm font-mono"
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="submit"
+                                disabled={withdrawalSubmitting}
+                                className="flex-1 px-4 py-2 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors text-sm font-medium disabled:opacity-50"
+                              >
+                                {withdrawalSubmitting ? 'Отправка...' : 'Отправить заявку'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowWithdrawalForm(false);
+                                  setWithdrawalAmount('');
+                                  setWithdrawalAddress('');
+                                }}
+                                className="px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm"
+                              >
+                                Отмена
+                              </button>
+                            </div>
+                          </form>
+                        )}
+                      </>
+                    )
+                  )}
+                </>
               )}
 
               {isDebug && (() => {

@@ -37,6 +37,18 @@ enum ReferralRewardType {
   SUBSEQUENT_ORDER
 }
 
+enum WithdrawalAsset {
+  TON
+  USDT_TON
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}
+
 model Product {
   id          String   @id @default(uuid())
   sku         String   @unique
@@ -70,6 +82,7 @@ model User {
   orders          Order[]           @relation("UserOrders")
   inviterRewards  ReferralEvent[]   @relation("InviterRewards")
   refereeRewards  ReferralEvent[]   @relation("RefereeRewards")
+  withdrawalRequests WithdrawalRequest[] @relation("UserWithdrawals")
 
   @@index([tgId])
   @@index([referralCode])
@@ -120,4 +133,24 @@ model ReferralEvent {
   @@index([inviterId, status])
   @@index([lockedUntil])
   @@map("referral_events")
+}
+
+model WithdrawalRequest {
+  id          String            @id @default(uuid())
+  userId      String            @map("user_id")
+  username    String?
+  amountRub   Int               @map("amount_rub")
+  asset       WithdrawalAsset   @map("asset")
+  tonAddress  String            @map("ton_address")
+  status      WithdrawalStatus  @default(PENDING)
+  adminNote   String?           @map("admin_note")
+  txHash      String?           @map("tx_hash")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  user User @relation("UserWithdrawals", fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([status])
+  @@map("withdrawal_requests")
 }

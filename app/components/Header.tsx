@@ -38,6 +38,12 @@ export default function Header() {
                 Профиль
               </Link>
               <Link
+                href="/referral"
+                className="font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap hidden sm:inline"
+              >
+                Реферальная программа
+              </Link>
+              <Link
                 href="/contacts"
                 className="font-medium text-[#a0a0a0] hover:text-[#4DA3FF] transition-colors whitespace-nowrap hidden sm:inline"
               >
