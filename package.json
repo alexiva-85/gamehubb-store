@@ -12,10 +12,16 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "assets:logo": "node scripts/make-logo-glyph.mjs"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["prisma", "@prisma/engines", "@prisma/client", "esbuild"]
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/engines",
+      "@prisma/client",
+      "esbuild"
+    ]
   },
   "engines": {
     "node": ">=20.0.0 <21.0.0",
@@ -36,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "prisma": "6.19.1",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"

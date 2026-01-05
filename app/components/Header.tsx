@@ -8,9 +8,9 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* LEFT: Brand */}
           <Link href="/" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
-            <div className="h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 overflow-hidden rounded-xl border border-white/[0.08] bg-black/20 flex items-center justify-center flex-shrink-0 p-1.5">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 md:h-10 md:w-10 overflow-hidden rounded-[12px] border border-white/[0.08] bg-black/20 flex items-center justify-center flex-shrink-0 p-1.5">
               <img
-                src="/brand/logo-mark-64.png"
+                src="/brand/logo-glyph-64.png"
                 alt="GameHubb"
                 className="w-full h-full object-contain"
               />
