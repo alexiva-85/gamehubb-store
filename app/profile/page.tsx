@@ -134,7 +134,7 @@ export default function ProfilePage() {
       setSummaryLoading(true);
       setSummaryError(null);
       const tg = (window as any).Telegram?.WebApp;
-      const initData = tg?.initData ?? '';
+      const initData = tg?.initData || '';
 
       if (!initData) {
         setSummaryLoading(false);
@@ -163,10 +163,26 @@ export default function ProfilePage() {
       } else {
         // Handle error responses (401, 403, 404, 500, etc.)
         const status = response.status;
+        let errorMessage = `Статистика временно недоступна (код: ${status}).`;
+        
+        // Try to get error message from response
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            if (status === 401 && errorData.error === 'Telegram initData not found') {
+              errorMessage = 'Telegram initData не найден';
+            } else {
+              errorMessage = errorData.error;
+            }
+          }
+        } catch {
+          // Ignore JSON parse errors, use default message
+        }
+        
         setReferralSummary(null);
         setSummaryError({
           status,
-          message: `Статистика временно недоступна (код: ${status}).`,
+          message: errorMessage,
         });
       }
     } catch (err) {

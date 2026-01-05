@@ -14,28 +14,40 @@ export async function POST(request: NextRequest) {
     const { initData } = body;
 
     // If no initData, return 401
-    if (!initData) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!initData || typeof initData !== 'string' || initData.trim() === '') {
+      return NextResponse.json(
+        { error: 'Telegram initData not found' },
+        { status: 401 }
+      );
     }
 
     // Validate initData
     const botToken = process.env.TG_BOT_TOKEN;
     if (!botToken) {
       console.error('TG_BOT_TOKEN is not set');
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Internal error', details: 'Server configuration error' },
+        { status: 500 }
+      );
     }
 
     const isValid = validateTelegramInitData(initData, botToken);
     if (!isValid) {
       console.error('Invalid Telegram initData');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Telegram initData not found' },
+        { status: 401 }
+      );
     }
 
     // Parse user from initData
     const telegramUser = parseTelegramUser(initData);
     if (!telegramUser || !telegramUser.id) {
       console.error('Failed to parse Telegram user');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Telegram initData not found' },
+        { status: 401 }
+      );
     }
 
     const tgId = String(telegramUser.id);
@@ -46,7 +58,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
 
     // Count referrals (users who have this user as referredBy)
@@ -102,8 +117,15 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error in /api/referrals/summary:', error);
+    
+    // Return safe error message without exposing secrets
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const safeDetails = errorMessage.includes('token') || errorMessage.includes('secret')
+      ? 'Configuration error'
+      : errorMessage;
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal error', details: safeDetails },
       { status: 500 }
     );
   }
