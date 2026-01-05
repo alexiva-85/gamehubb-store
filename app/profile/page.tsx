@@ -130,17 +130,19 @@ export default function ProfilePage() {
   const fetchReferralSummary = async () => {
     if (typeof window === 'undefined') return;
 
+    const tg = (window as any).Telegram?.WebApp;
+    const initData = tg?.initData ?? '';
+
+    // If no initData, don't make request at all
+    if (!initData) {
+      setSummaryLoading(false);
+      setSummaryError({ status: null, message: 'Telegram initData не найден' });
+      return;
+    }
+
     try {
       setSummaryLoading(true);
       setSummaryError(null);
-      const tg = (window as any).Telegram?.WebApp;
-      const initData = tg?.initData || '';
-
-      if (!initData) {
-        setSummaryLoading(false);
-        setSummaryError({ status: null, message: 'Telegram initData не найден' });
-        return;
-      }
 
       const response = await fetch('/api/referrals/summary', {
         method: 'POST',
@@ -161,14 +163,14 @@ export default function ProfilePage() {
           setSummaryError(null);
         }
       } else {
-        // Handle error responses (401, 403, 404, 500, etc.)
+        // Handle error responses (401, 405, 500, etc.)
         const status = response.status;
         let errorMessage = `Статистика временно недоступна (код: ${status}).`;
         
         // Try to get error message from response
         try {
           const errorData = await response.json();
-          if (errorData.error) {
+          if (errorData?.error) {
             if (status === 401 && errorData.error === 'Telegram initData not found') {
               errorMessage = 'Telegram initData не найден';
             } else {
