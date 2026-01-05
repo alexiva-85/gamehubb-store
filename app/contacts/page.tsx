@@ -55,6 +55,22 @@ export default function ContactsPage() {
             <li>Партнерство и сотрудничество</li>
           </ul>
         </Card>
+
+        <Card>
+          <h2 className="text-xl font-medium mb-4 text-zinc-100">Доставка и возвраты (кратко)</h2>
+          <ul className="list-disc list-inside space-y-2 text-zinc-300 mb-4">
+            <li>Доставка обычно занимает 5–60 минут (авто) или 1–24 часа (вручную). Редко — до 72 часов.</li>
+            <li>После успешного зачисления цифрового товара возврат, как правило, невозможен.</li>
+            <li>Возврат возможен при недоставке, технической ошибке или двойной оплате.</li>
+            <li>Если указаны неверные данные аккаунта/ID/сервера — возврат не производится.</li>
+            <li>По вопросам доставки обращайтесь в поддержку в течение 7 дней.</li>
+          </ul>
+          <p className="text-zinc-300">
+            <a href="/refund" className="text-blue-300 hover:underline hover:text-blue-200 font-medium">
+              Полная политика доставки и возвратов →
+            </a>
+          </p>
+        </Card>
       </div>
     </div>
   );
