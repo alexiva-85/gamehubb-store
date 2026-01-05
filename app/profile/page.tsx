@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [canShare, setCanShare] = useState(false);
   const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<{ status: number | null; message: string } | null>(null);
 
   // Check feature flag (client-side)
   const isReferralProgramEnabled = typeof window !== 'undefined' 
@@ -92,48 +93,6 @@ export default function ProfilePage() {
 
     // Fetch referral summary if feature flag is enabled
     if (isReferralProgramEnabled) {
-      const fetchReferralSummary = async () => {
-        if (typeof window === 'undefined') return;
-
-        try {
-          setSummaryLoading(true);
-          const tg = (window as any).Telegram?.WebApp;
-          const initData = tg?.initData ?? '';
-
-          if (!initData) {
-            setSummaryLoading(false);
-            return;
-          }
-
-          const response = await fetch('/api/referrals/summary', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ initData }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.enabled === false) {
-              // Feature flag disabled on server
-              setReferralSummary(null);
-            } else {
-              setReferralSummary(data);
-            }
-          } else if (response.status === 404) {
-            // Feature disabled or not found
-            setReferralSummary(null);
-          } else {
-            console.error('Failed to fetch referral summary');
-          }
-        } catch (err) {
-          console.error('Error fetching referral summary:', err);
-        } finally {
-          setSummaryLoading(false);
-        }
-      };
-
       fetchReferralSummary();
     }
   }, [isReferralProgramEnabled]);
@@ -166,6 +125,65 @@ export default function ProfilePage() {
         handleCopy();
       }
     }
+  };
+
+  const fetchReferralSummary = async () => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      setSummaryLoading(true);
+      setSummaryError(null);
+      const tg = (window as any).Telegram?.WebApp;
+      const initData = tg?.initData ?? '';
+
+      if (!initData) {
+        setSummaryLoading(false);
+        setSummaryError({ status: null, message: 'Telegram initData не найден' });
+        return;
+      }
+
+      const response = await fetch('/api/referrals/summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ initData }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.enabled === false) {
+          // Feature flag disabled on server
+          setReferralSummary(null);
+          setSummaryError(null);
+        } else {
+          setReferralSummary(data);
+          setSummaryError(null);
+        }
+      } else {
+        // Handle error responses (401, 403, 404, 500, etc.)
+        const status = response.status;
+        setReferralSummary(null);
+        setSummaryError({
+          status,
+          message: `Статистика временно недоступна (код: ${status}).`,
+        });
+      }
+    } catch (err) {
+      // Network error or other exception
+      console.error('Error fetching referral summary:', err);
+      setReferralSummary(null);
+      setSummaryError({
+        status: null,
+        message: 'Статистика временно недоступна (ошибка сети).',
+      });
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const handleRetrySummary = () => {
+    fetchReferralSummary();
   };
 
   // Debug info
@@ -206,7 +224,22 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {isReferralProgramEnabled && referralSummary && !summaryLoading && (
+          {isReferralProgramEnabled && summaryError && !summaryLoading && (
+            <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
+              <p className="text-sm text-zinc-300">{summaryError.message}</p>
+              <p className="text-xs text-zinc-500">
+                Проверь: включены ли флаги и открыт ли магазин внутри Telegram.
+              </p>
+              <button
+                onClick={handleRetrySummary}
+                className="w-full mt-2 px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium"
+              >
+                Повторить
+              </button>
+            </div>
+          )}
+
+          {isReferralProgramEnabled && referralSummary && !summaryLoading && !summaryError && (
             <div className="mb-4 p-3 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-400">Приглашено друзей:</span>
