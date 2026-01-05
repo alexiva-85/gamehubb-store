@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram';
 import { isReferralProgramEnabled } from '@/lib/config';
 
+// Use Node.js runtime to avoid edge runtime issues with Prisma
+export const runtime = 'nodejs';
+
 export async function GET() {
   return NextResponse.json(
     { error: 'Method not allowed' },

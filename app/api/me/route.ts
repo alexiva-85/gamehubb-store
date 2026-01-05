@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { validateTelegramInitData, parseTelegramUser, getStartParamFromInitData } from '@/lib/telegram';
 import { generateReferralCode, parseReferralFromStartParam } from '@/lib/referral';
 
+// Use Node.js runtime to avoid edge runtime issues with Prisma
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

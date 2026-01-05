@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { fallbackProducts } from '@/lib/fallbackProducts';
 
+// Use Node.js runtime to avoid edge runtime issues with Prisma
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     // Try to fetch products from database
