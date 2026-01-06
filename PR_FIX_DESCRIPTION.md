@@ -42,7 +42,7 @@ Type error: Module '"@prisma/client"' has no exported member 'PrismaClient'.
 
 - `package.json` - версии Prisma, build/postinstall scripts
 - `pnpm-lock.yaml` - обновлен lockfile
-- `prisma/schema.prisma` - добавлен `url` в datasource
+- `` - добавлен `url` в datasource
 - `lib/prisma.ts` - упрощен для Prisma 6.x
 - `prisma.config.ts` - исправлен TypeScript тип
 - `.npmrc` - добавлен `enable-pre-post-scripts=true`

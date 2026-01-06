@@ -563,7 +563,7 @@ export default function ProfilePage() {
                   Открыть в Telegram
                 </a>
                 <Link
-                  href="/terms"
+                  href="/referral"
                   className="block w-full px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium text-center"
                 >
                   Как это работает
