@@ -4,9 +4,10 @@ import { getContactInfo } from './contacts';
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 /**
- * Send email notification about new withdrawal request
+ * Send email notification to admin about new withdrawal request
  */
 export async function sendWithdrawalRequestEmail(
+  requestId: string,
   username: string | null,
   tgUserId: string,
   amountRub: number,
@@ -15,23 +16,25 @@ export async function sendWithdrawalRequestEmail(
   adminUrl: string
 ): Promise<void> {
   if (!resend) {
-    console.warn('RESEND_API_KEY not set, skipping email notification');
+    console.warn('[withdrawals/request] RESEND_API_KEY not set, skipping admin email notification');
     return;
   }
 
-  const contactInfo = getContactInfo();
-  const toEmail = process.env.SUPPORT_EMAIL || contactInfo.email;
+  // Hardcoded admin email as per requirements
+  const adminEmail = 'gamehubb.store@gmail.com';
+  const fromEmail = process.env.EMAIL_FROM || 'GameHubb Store <noreply@gamehubb.store>';
 
   const assetName = asset === 'TON' ? 'TON (legacy)' : 'USDT (TON)';
   const displayUsername = username ? `@${username.replace('@', '')}` : `ID: ${tgUserId}`;
 
   try {
     await resend.emails.send({
-      from: 'GameHubb Store <noreply@gamehubb.store>',
-      to: toEmail,
+      from: fromEmail,
+      to: adminEmail,
       subject: `Новая заявка на вывод: ${amountRub}₽ (${assetName})`,
       html: `
         <h2>Новая заявка на вывод средств</h2>
+        <p><strong>ID заявки:</strong> ${requestId}</p>
         <p><strong>Пользователь:</strong> ${displayUsername}</p>
         <p><strong>Telegram User ID:</strong> ${tgUserId}</p>
         <p><strong>Сумма:</strong> ${amountRub}₽</p>
@@ -40,8 +43,12 @@ export async function sendWithdrawalRequestEmail(
         <p><a href="${adminUrl}">Открыть админ-панель</a></p>
       `,
     });
+    console.log('[withdrawals/request] admin email sent');
   } catch (error) {
-    console.error('Error sending withdrawal request email:', error);
+    console.error('[withdrawals/request] admin email failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+    });
     // Don't throw - email failure shouldn't break the request
   }
 }

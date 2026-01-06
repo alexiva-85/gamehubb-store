@@ -200,19 +200,29 @@ export async function POST(request: NextRequest) {
       throw txError;
     }
 
-    // Send email notification
-    const adminUrl = process.env.NEXT_PUBLIC_APP_BASE_URL 
-      ? `${process.env.NEXT_PUBLIC_APP_BASE_URL}/admin/withdrawals`
-      : `${request.nextUrl.origin}/admin/withdrawals`;
+    // Send email notification to admin (non-blocking)
+    try {
+      const adminKey = process.env.ADMIN_KEY || '';
+      const adminUrl = process.env.NEXT_PUBLIC_APP_BASE_URL 
+        ? `${process.env.NEXT_PUBLIC_APP_BASE_URL}/admin/withdrawals?key=${adminKey}`
+        : `${request.nextUrl.origin}/admin/withdrawals?key=${adminKey}`;
 
-    await sendWithdrawalRequestEmail(
-      username,
-      tgId,
-      amountRub, // Pass rubles to email (for display)
-      finalAsset,
-      tonAddress.trim(),
-      adminUrl
-    );
+      await sendWithdrawalRequestEmail(
+        withdrawalRequest.id,
+        username,
+        tgId,
+        amountRub, // Pass rubles to email (for display)
+        finalAsset,
+        tonAddress.trim(),
+        adminUrl
+      );
+    } catch (emailError) {
+      // Email failure should not break request creation
+      console.error('[withdrawals/request] admin email failed', {
+        error: emailError instanceof Error ? emailError.message : 'Unknown error',
+        name: emailError instanceof Error ? emailError.name : 'Unknown',
+      });
+    }
 
     return NextResponse.json({
       id: withdrawalRequest.id,
