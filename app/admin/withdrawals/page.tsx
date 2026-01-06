@@ -8,7 +8,7 @@ interface WithdrawalRequest {
   tgUserId: string;
   username: string | null;
   amountRub: number;
-  asset: 'TON' | 'USDT_TON';
+  asset: 'TON' | 'USDT_TON'; // TON is legacy, new requests only USDT_TON
   tonAddress: string;
   status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED';
   adminNote: string | null;
@@ -180,7 +180,7 @@ export default function AdminWithdrawalsPage() {
                   <div>
                     <p className="text-sm text-zinc-400">Сумма</p>
                     <p className="text-zinc-200 font-medium">
-                      {request.amountRub}₽ ({request.asset})
+                      {request.amountRub}₽ ({request.asset === 'TON' ? 'TON (legacy)' : 'USDT (TON)'})
                     </p>
                   </div>
                   <div className="col-span-2">

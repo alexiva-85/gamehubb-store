@@ -67,9 +67,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!asset || (asset !== 'TON' && asset !== 'USDT_TON')) {
+    // Default to USDT_TON if asset is not provided
+    const finalAsset = asset || 'USDT_TON';
+    
+    // Only USDT_TON is allowed (TON removed)
+    if (finalAsset !== 'USDT_TON') {
       return NextResponse.json(
-        { error: 'Неверный актив. Доступно: TON, USDT_TON' },
+        { error: 'Неверный актив. Доступно только: USDT (TON)' },
         { status: 400 }
       );
     }
@@ -143,7 +147,7 @@ export async function POST(request: NextRequest) {
             userId: user.id,
             username,
             amountRub: amountRubKopecks, // Store in kopecks
-            asset,
+            asset: finalAsset,
             tonAddress: tonAddress.trim(),
             status: 'PENDING',
           },
@@ -198,7 +202,7 @@ export async function POST(request: NextRequest) {
       username,
       tgId,
       amountRub, // Pass rubles to email (for display)
-      asset,
+      finalAsset,
       tonAddress.trim(),
       adminUrl
     );

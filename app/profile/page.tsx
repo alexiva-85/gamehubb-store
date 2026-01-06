@@ -31,7 +31,8 @@ export default function ProfilePage() {
   const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([]);
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
-  const [withdrawalAsset, setWithdrawalAsset] = useState<'TON' | 'USDT_TON'>('TON');
+  // Always use USDT_TON, no choice needed
+  const withdrawalAsset: 'USDT_TON' = 'USDT_TON';
   const [withdrawalAddress, setWithdrawalAddress] = useState('');
   const [withdrawalSubmitting, setWithdrawalSubmitting] = useState(false);
 
@@ -393,7 +394,9 @@ export default function ProfilePage() {
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Сумма:</span>
-                          <span className="text-zinc-100">{withdrawalRequest.amountRub}₽ ({withdrawalRequest.asset})</span>
+                          <span className="text-zinc-100">
+                            {withdrawalRequest.amountRub}₽ ({withdrawalRequest.asset === 'TON' ? 'TON (legacy)' : 'USDT (TON)'})
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-400">Статус:</span>
@@ -464,18 +467,7 @@ export default function ProfilePage() {
                               </p>
                             </div>
                             <div>
-                              <label className="block text-xs text-zinc-400 mb-1">Актив</label>
-                              <select
-                                value={withdrawalAsset}
-                                onChange={(e) => setWithdrawalAsset(e.target.value as 'TON' | 'USDT_TON')}
-                                className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-white text-sm"
-                              >
-                                <option value="TON">TON</option>
-                                <option value="USDT_TON">USDT (TON)</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-xs text-zinc-400 mb-1">TON адрес</label>
+                              <label className="block text-xs text-zinc-400 mb-1">TON адрес (для USDT)</label>
                               <input
                                 type="text"
                                 value={withdrawalAddress}
@@ -542,7 +534,7 @@ export default function ProfilePage() {
                                 })}
                               </p>
                               <p className="text-sm text-zinc-100 font-medium mt-1">
-                                {request.amountRub}₽ ({request.asset})
+                                {request.amountRub}₽ ({request.asset === 'TON' ? 'TON (legacy)' : 'USDT (TON)'})
                               </p>
                             </div>
                             <span className={`text-xs font-medium ${

@@ -38,7 +38,6 @@ enum ReferralRewardType {
 }
 
 enum WithdrawalAsset {
-  TON
   USDT_TON
 }
 

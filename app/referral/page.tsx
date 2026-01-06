@@ -47,8 +47,8 @@ export default function ReferralPage() {
               Ориентировочный срок выплаты: <strong className="text-zinc-100">в течение 24 часов</strong> после одобрения заявки.
             </p>
             <p>
-              <strong className="text-zinc-100">Доступные активы:</strong> TON и USDT (сеть TON). 
-              Для обоих активов используется один TON-адрес.
+              <strong className="text-zinc-100">Доступный актив:</strong> USDT (сеть TON). 
+              Для получения используется TON-адрес.
             </p>
           </div>
         </Card>

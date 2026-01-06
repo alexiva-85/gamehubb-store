@@ -22,7 +22,7 @@ export async function sendWithdrawalRequestEmail(
   const contactInfo = getContactInfo();
   const toEmail = process.env.SUPPORT_EMAIL || contactInfo.email;
 
-  const assetName = asset === 'TON' ? 'TON' : 'USDT (TON)';
+  const assetName = asset === 'TON' ? 'TON (legacy)' : 'USDT (TON)';
   const displayUsername = username ? `@${username.replace('@', '')}` : `ID: ${tgUserId}`;
 
   try {
