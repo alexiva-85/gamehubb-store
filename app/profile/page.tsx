@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Card from '@/app/components/Card';
+import { formatRubFromKopeks, MIN_WITHDRAW_RUB, rubToKopeks } from '@/lib/money';
 
 interface ReferralSummary {
   referralCode: string;
@@ -257,8 +258,8 @@ export default function ProfilePage() {
     if (!initData) return;
 
     const amount = parseInt(withdrawalAmount, 10);
-    if (isNaN(amount) || amount < 500) {
-      alert('Минимальная сумма вывода: 500₽');
+    if (isNaN(amount) || amount < MIN_WITHDRAW_RUB) {
+      alert(`Минимальная сумма вывода: ${MIN_WITHDRAW_RUB}₽`);
       return;
     }
 
@@ -366,11 +367,11 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-zinc-400">Заблокировано:</span>
-                      <span className="text-zinc-100 font-medium">{(referralSummary.rewards.lockedAmount / 100).toFixed(2)}₽</span>
+                      <span className="text-zinc-100 font-medium">{formatRubFromKopeks(referralSummary.rewards.lockedAmount)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-zinc-400">Доступно к выводу:</span>
-                      <span className="text-zinc-100 font-medium">{(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽</span>
+                      <span className="text-zinc-100 font-medium">{formatRubFromKopeks(referralSummary.rewards.availableAmount)}</span>
                     </div>
                     <div className="pt-2 border-t border-[#3a3a3a]">
                       <p className="text-xs text-zinc-500">{referralSummary.note}</p>
@@ -419,13 +420,13 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   ) : (
-                    referralSummary.rewards.availableAmount >= 50000 && (
+                    referralSummary.rewards.availableAmount >= rubToKopeks(MIN_WITHDRAW_RUB) && (
                       <>
                         {!showWithdrawalForm ? (
                           <button
                             onClick={() => {
                               setShowWithdrawalForm(true);
-                              setWithdrawalAmount((referralSummary.rewards.availableAmount / 100).toFixed(0));
+                              setWithdrawalAmount(Math.floor(referralSummary.rewards.availableAmount / 100).toString());
                             }}
                             className="w-full mb-4 px-4 py-2 bg-[#4DA3FF] text-white rounded-lg hover:bg-[#3d8fdf] transition-colors text-sm font-medium"
                           >
@@ -440,13 +441,13 @@ export default function ProfilePage() {
                                 type="number"
                                 value={withdrawalAmount}
                                 onChange={(e) => setWithdrawalAmount(e.target.value)}
-                                min="500"
-                                max={(referralSummary.rewards.availableAmount / 100).toFixed(0)}
+                                min={MIN_WITHDRAW_RUB}
+                                max={Math.floor(referralSummary.rewards.availableAmount / 100)}
                                 required
                                 className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded text-white text-sm"
                               />
                               <p className="text-xs text-zinc-500 mt-1">
-                                Доступно: {(referralSummary.rewards.availableAmount / 100).toFixed(2)}₽
+                                Доступно: {formatRubFromKopeks(referralSummary.rewards.availableAmount)} (минимум {MIN_WITHDRAW_RUB}₽)
                               </p>
                             </div>
                             <div>

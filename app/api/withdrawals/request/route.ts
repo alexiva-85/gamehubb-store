@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram';
 import { sendWithdrawalRequestEmail } from '@/lib/email';
+import { formatRubFromKopeks, MIN_WITHDRAW_RUB, MIN_WITHDRAW_KOPEKS, rubToKopeks } from '@/lib/money';
 
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';
@@ -59,9 +60,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate request data
-    if (!amountRub || typeof amountRub !== 'number' || amountRub < 500) {
+    if (!amountRub || typeof amountRub !== 'number' || amountRub < MIN_WITHDRAW_RUB) {
       return NextResponse.json(
-        { error: 'Минимальная сумма вывода: 500₽' },
+        { error: `Минимальная сумма вывода: ${MIN_WITHDRAW_RUB}₽` },
         { status: 400 }
       );
     }
@@ -125,20 +126,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert amountRub to kopecks for comparison
-    const amountRubKopecks = amountRub * 100;
+    const amountRubKopecks = rubToKopeks(amountRub);
     if (availableAmount < amountRubKopecks) {
       return NextResponse.json(
-        { error: `Недостаточно средств. Доступно: ${(availableAmount / 100).toFixed(2)}₽` },
+        { error: `Недостаточно средств. Доступно: ${formatRubFromKopeks(availableAmount)}` },
         { status: 400 }
       );
     }
 
     // Create withdrawal request
+    // Store amount in kopecks in DB (amountRub field stores kopecks)
     const withdrawalRequest = await prisma.withdrawalRequest.create({
       data: {
         userId: user.id,
         username,
-        amountRub,
+        amountRub: amountRubKopecks, // Store in kopecks
         asset,
         tonAddress: tonAddress.trim(),
         status: 'PENDING',
@@ -153,7 +155,7 @@ export async function POST(request: NextRequest) {
     await sendWithdrawalRequestEmail(
       username,
       tgId,
-      amountRub,
+      amountRub, // Pass rubles to email (for display)
       asset,
       tonAddress.trim(),
       adminUrl
@@ -162,7 +164,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: withdrawalRequest.id,
       status: withdrawalRequest.status,
-      amountRub: withdrawalRequest.amountRub,
+      amountRub: amountRub, // Return rubles for UI
       asset: withdrawalRequest.asset,
       createdAt: withdrawalRequest.createdAt,
     });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { formatRubFromKopeks } from '@/lib/money';
 
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       id: req.id,
       tgUserId: req.user.tgId,
       username: req.username,
-      amountRub: req.amountRub,
+      amountRub: Math.floor(req.amountRub / 100), // Convert kopecks to rubles for UI
       asset: req.asset,
       tonAddress: req.tonAddress,
       status: req.status,
