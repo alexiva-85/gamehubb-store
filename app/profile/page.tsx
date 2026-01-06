@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [summaryError, setSummaryError] = useState<{ status: number | null; message: string } | null>(null);
   const [withdrawalRequest, setWithdrawalRequest] = useState<any>(null);
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+  const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([]);
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [withdrawalAsset, setWithdrawalAsset] = useState<'TON' | 'USDT_TON'>('TON');
@@ -239,6 +240,7 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setWithdrawalRequest(data.request);
+        setWithdrawalHistory(data.history || []);
       }
     } catch (err) {
       console.error('Error fetching withdrawal request:', err);
@@ -290,6 +292,8 @@ export default function ProfilePage() {
         setWithdrawalAmount('');
         setWithdrawalAddress('');
         alert('Заявка создана успешно');
+        // Refresh history after creating new request
+        fetchWithdrawalRequest();
       } else {
         const errorData = await response.json();
         alert(errorData.error || 'Ошибка создания заявки');
@@ -507,6 +511,69 @@ export default function ProfilePage() {
                     )
                   )}
                 </>
+              )}
+
+              {/* Withdrawal History */}
+              {isTelegramMode && isReferralProgramEnabled && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-medium mb-3 text-zinc-100">История выводов</h3>
+                  {withdrawalHistory.length === 0 ? (
+                    <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
+                      <p className="text-sm text-zinc-400 text-center">
+                        Заявок на вывод пока нет
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {withdrawalHistory.map((request) => (
+                        <div
+                          key={request.id}
+                          className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-3 space-y-2"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="text-xs text-zinc-400">
+                                {new Date(request.createdAt).toLocaleString('ru-RU', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </p>
+                              <p className="text-sm text-zinc-100 font-medium mt-1">
+                                {request.amountRub}₽ ({request.asset})
+                              </p>
+                            </div>
+                            <span className={`text-xs font-medium ${
+                              request.status === 'PENDING' ? 'text-yellow-400' :
+                              request.status === 'APPROVED' ? 'text-blue-400' :
+                              request.status === 'PAID' ? 'text-green-400' :
+                              'text-red-400'
+                            }`}>
+                              {request.status === 'PENDING' ? 'Ожидает' :
+                               request.status === 'APPROVED' ? 'Одобрена' :
+                               request.status === 'PAID' ? 'Оплачена' :
+                               'Отклонена'}
+                            </span>
+                          </div>
+                          {request.status === 'REJECTED' && request.adminNote && (
+                            <div className="pt-2 border-t border-[#3a3a3a]">
+                              <p className="text-xs text-zinc-400">Причина:</p>
+                              <p className="text-xs text-zinc-200 mt-1">{request.adminNote}</p>
+                            </div>
+                          )}
+                          {request.status === 'PAID' && request.txHash && (
+                            <div className="pt-2 border-t border-[#3a3a3a]">
+                              <p className="text-xs text-zinc-400">TX:</p>
+                              <p className="text-xs text-zinc-200 font-mono break-all mt-1">{request.txHash}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
               {isDebug && (() => {

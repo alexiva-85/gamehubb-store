@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ request: null });
     }
 
-    // Get active withdrawal request
+    // Get active withdrawal request (PENDING or APPROVED)
     const activeRequest = await prisma.withdrawalRequest.findFirst({
       where: {
         userId: user.id,
@@ -67,12 +67,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!activeRequest) {
-      return NextResponse.json({ request: null });
-    }
+    // Get withdrawal history (last 10 requests)
+    const withdrawalHistory = await prisma.withdrawalRequest.findMany({
+      where: {
+        userId: user.id,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 10,
+      select: {
+        id: true,
+        amountRub: true,
+        asset: true,
+        status: true,
+        adminNote: true,
+        txHash: true,
+        paidAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     return NextResponse.json({
-      request: {
+      request: activeRequest ? {
         id: activeRequest.id,
         amountRub: Math.floor(activeRequest.amountRub / 100), // Convert kopecks to rubles for UI
         asset: activeRequest.asset,
@@ -82,7 +100,18 @@ export async function POST(request: NextRequest) {
         txHash: activeRequest.txHash,
         createdAt: activeRequest.createdAt,
         updatedAt: activeRequest.updatedAt,
-      },
+      } : null,
+      history: withdrawalHistory.map(req => ({
+        id: req.id,
+        amountRub: Math.floor(req.amountRub / 100), // Convert kopecks to rubles for UI
+        asset: req.asset,
+        status: req.status,
+        adminNote: req.adminNote, // User can see their own admin notes
+        txHash: req.txHash,
+        paidAt: req.paidAt,
+        createdAt: req.createdAt,
+        updatedAt: req.updatedAt,
+      })),
     });
   } catch (error) {
     console.error('[withdrawals/my] error', {
