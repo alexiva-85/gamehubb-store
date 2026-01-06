@@ -38,6 +38,14 @@ export async function PATCH(
       );
     }
 
+    // Require adminNote for REJECTED status
+    if (status === 'REJECTED' && (!adminNote || adminNote.trim() === '')) {
+      return NextResponse.json(
+        { error: 'Причина отказа обязательна при отклонении заявки' },
+        { status: 400 }
+      );
+    }
+
     // Get current withdrawal request to check status
     const currentRequest = await prisma.withdrawalRequest.findUnique({
       where: { id },

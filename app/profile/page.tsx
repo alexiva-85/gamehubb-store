@@ -405,7 +405,16 @@ export default function ProfilePage() {
                              'Отклонена'}
                           </span>
                         </div>
-                        {withdrawalRequest.adminNote && (
+                        {withdrawalRequest.status === 'REJECTED' && withdrawalRequest.adminNote && (
+                          <div className="pt-2 border-t border-[#3a3a3a]">
+                            <p className="text-xs text-zinc-400 mb-1">Причина отклонения:</p>
+                            <p className="text-zinc-200 text-sm">{withdrawalRequest.adminNote}</p>
+                            <p className="text-xs text-zinc-500 mt-2">
+                              Исправьте причину и отправьте заявку повторно
+                            </p>
+                          </div>
+                        )}
+                        {withdrawalRequest.adminNote && withdrawalRequest.status !== 'REJECTED' && (
                           <div>
                             <span className="text-zinc-400">Примечание:</span>
                             <p className="text-zinc-200 text-xs mt-1">{withdrawalRequest.adminNote}</p>

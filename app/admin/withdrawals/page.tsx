@@ -70,6 +70,12 @@ export default function AdminWithdrawalsPage() {
       return;
     }
 
+    // Validate adminNote for REJECTED
+    if (status === 'REJECTED' && !adminNote.trim()) {
+      alert('Укажите причину отказа');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/admin/withdrawals/${id}`, {
         method: 'PATCH',
@@ -205,13 +211,22 @@ export default function AdminWithdrawalsPage() {
                 {editingId === request.id ? (
                   <div className="space-y-3 pt-3 border-t border-[#3a3a3a]">
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-1">Примечание</label>
+                      <label className="block text-sm text-zinc-400 mb-1">
+                        Примечание
+                        <span className="text-zinc-500 text-xs ml-1">(обязательно при отклонении)</span>
+                      </label>
                       <textarea
                         value={adminNote}
                         onChange={(e) => setAdminNote(e.target.value)}
                         className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
                         rows={2}
+                        placeholder="Укажите причину при отклонении заявки"
                       />
+                      {!adminNote.trim() && (
+                        <p className="text-xs text-zinc-500 mt-1">
+                          При отклонении заявки необходимо указать причину
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm text-zinc-400 mb-1">TX Hash (для статуса PAID)</label>
