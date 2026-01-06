@@ -38,7 +38,8 @@ enum ReferralRewardType {
 }
 
 enum WithdrawalAsset {
-  USDT_TON
+  TON        // Legacy, only for reading old records
+  USDT_TON   // Only allowed for new requests
 }
 
 enum WithdrawalStatus {

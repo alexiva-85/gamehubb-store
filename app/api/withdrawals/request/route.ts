@@ -70,7 +70,14 @@ export async function POST(request: NextRequest) {
     // Default to USDT_TON if asset is not provided
     const finalAsset = asset || 'USDT_TON';
     
-    // Only USDT_TON is allowed (TON removed)
+    // Only USDT_TON is allowed for new requests (TON is legacy, read-only)
+    if (finalAsset === 'TON') {
+      return NextResponse.json(
+        { error: 'TON больше не поддерживается, используйте USDT (TON)' },
+        { status: 400 }
+      );
+    }
+    
     if (finalAsset !== 'USDT_TON') {
       return NextResponse.json(
         { error: 'Неверный актив. Доступно только: USDT (TON)' },
