@@ -112,26 +112,30 @@ model Order {
 }
 
 model ReferralEvent {
-  id          String              @id @default(uuid())
-  orderId     String              @map("order_id")
-  inviterId  String              @map("inviter_id")
-  refereeId  String              @map("referee_id")
-  percentage Int
-  amount     Int
-  rewardType ReferralRewardType  @map("reward_type")
-  status     ReferralRewardStatus @default(LOCKED)
-  lockedUntil DateTime?           @map("locked_until")
-  createdAt  DateTime            @default(now()) @map("created_at")
-  paidOutAt  DateTime?           @map("paid_out_at")
-  canceledAt DateTime?            @map("canceled_at")
+  id                String              @id @default(uuid())
+  orderId           String              @map("order_id")
+  inviterId         String              @map("inviter_id")
+  refereeId         String              @map("referee_id")
+  percentage        Int
+  amount            Int
+  rewardType        ReferralRewardType  @map("reward_type")
+  status            ReferralRewardStatus @default(LOCKED)
+  lockedUntil       DateTime?           @map("locked_until")
+  withdrawalRequestId String?            @map("withdrawal_request_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  paidOutAt         DateTime?           @map("paid_out_at")
+  canceledAt        DateTime?            @map("canceled_at")
 
-  order   Order @relation(fields: [orderId], references: [id])
-  inviter User  @relation("InviterRewards", fields: [inviterId], references: [id])
-  referee User  @relation("RefereeRewards", fields: [refereeId], references: [id])
+  order             Order @relation(fields: [orderId], references: [id])
+  inviter           User  @relation("InviterRewards", fields: [inviterId], references: [id])
+  referee           User  @relation("RefereeRewards", fields: [refereeId], references: [id])
+  withdrawalRequest WithdrawalRequest? @relation(fields: [withdrawalRequestId], references: [id])
 
   @@unique([orderId, inviterId, rewardType])
   @@index([inviterId, status])
   @@index([lockedUntil])
+  @@index([withdrawalRequestId])
+  @@index([inviterId, status, withdrawalRequestId])
   @@map("referral_events")
 }
 
@@ -145,10 +149,12 @@ model WithdrawalRequest {
   status      WithdrawalStatus  @default(PENDING)
   adminNote   String?           @map("admin_note")
   txHash      String?           @map("tx_hash")
+  paidAt      DateTime?         @map("paid_at")
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
-  user User @relation("UserWithdrawals", fields: [userId], references: [id])
+  user            User            @relation("UserWithdrawals", fields: [userId], references: [id])
+  referralEvents  ReferralEvent[]
 
   @@index([userId, status])
   @@index([status])

@@ -101,8 +101,21 @@ export async function POST(request: NextRequest) {
           amount: true,
           status: true,
           lockedUntil: true,
+          withdrawalRequestId: true,
         },
       });
+
+      // Get active withdrawal requests to check if events are reserved
+      const activeWithdrawalRequests = await prisma.withdrawalRequest.findMany({
+        where: {
+          userId: user.id,
+          status: {
+            in: ['PENDING', 'APPROVED'],
+          },
+        },
+        select: { id: true },
+      });
+      const activeRequestIds = new Set(activeWithdrawalRequests.map(r => r.id));
 
       let lockedAmount = 0;
       let availableAmount = 0;
@@ -117,12 +130,21 @@ export async function POST(request: NextRequest) {
         } else if (reward.status === 'LOCKED') {
           if (reward.lockedUntil && reward.lockedUntil > now) {
             lockedAmount += reward.amount;
+          } else if (reward.withdrawalRequestId && activeRequestIds.has(reward.withdrawalRequestId)) {
+            // LOCKED but past lockedUntil, but reserved for active withdrawal -> count as locked
+            lockedAmount += reward.amount;
           } else {
-            // LOCKED but past lockedUntil -> treat as AVAILABLE
+            // LOCKED but past lockedUntil and not reserved -> treat as AVAILABLE
             availableAmount += reward.amount;
           }
         } else if (reward.status === 'AVAILABLE') {
-          availableAmount += reward.amount;
+          // Only count as available if not reserved for active withdrawal
+          if (!reward.withdrawalRequestId || !activeRequestIds.has(reward.withdrawalRequestId)) {
+            availableAmount += reward.amount;
+          } else {
+            // Reserved for active withdrawal -> count as locked
+            lockedAmount += reward.amount;
+          }
         }
       }
 
@@ -164,4 +186,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 

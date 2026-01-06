@@ -98,54 +98,96 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get available amount from referral summary
-    const now = new Date();
-    const allRewards = await prisma.referralEvent.findMany({
-      where: { inviterId: user.id },
-      select: {
-        amount: true,
-        status: true,
-        lockedUntil: true,
-      },
-    });
-
-    let availableAmount = 0;
-    for (const reward of allRewards) {
-      if (reward.status === 'PAID' || reward.status === 'CANCELED') {
-        continue;
-      }
-      if (reward.status === 'LOCKED') {
-        if (reward.lockedUntil && reward.lockedUntil > now) {
-          continue; // Still locked
-        }
-        // LOCKED but past lockedUntil -> treat as AVAILABLE
-        availableAmount += reward.amount;
-      } else if (reward.status === 'AVAILABLE') {
-        availableAmount += reward.amount;
-      }
-    }
-
     // Convert amountRub to kopecks for comparison
     const amountRubKopecks = rubToKopeks(amountRub);
-    if (availableAmount < amountRubKopecks) {
-      return NextResponse.json(
-        { error: `Недостаточно средств. Доступно: ${formatRubFromKopeks(availableAmount)}` },
-        { status: 400 }
-      );
-    }
 
-    // Create withdrawal request
-    // Store amount in kopecks in DB (amountRub field stores kopecks)
-    const withdrawalRequest = await prisma.withdrawalRequest.create({
-      data: {
-        userId: user.id,
-        username,
-        amountRub: amountRubKopecks, // Store in kopecks
-        asset,
-        tonAddress: tonAddress.trim(),
-        status: 'PENDING',
-      },
-    });
+    // Create withdrawal request and reserve referral events in transaction
+    let withdrawalRequest;
+    try {
+      withdrawalRequest = await prisma.$transaction(async (tx) => {
+        const now = new Date();
+
+        // Get available events (AVAILABLE status, not reserved, or LOCKED past lockedUntil)
+        const availableEvents = await tx.referralEvent.findMany({
+          where: {
+            inviterId: user.id,
+            OR: [
+              {
+                status: 'AVAILABLE',
+                withdrawalRequestId: null,
+              },
+              {
+                status: 'LOCKED',
+                lockedUntil: {
+                  lte: now,
+                },
+                withdrawalRequestId: null,
+              },
+            ],
+          },
+          orderBy: {
+            createdAt: 'asc', // FIFO
+          },
+        });
+
+        // Calculate available amount
+        const availableAmount = availableEvents.reduce((sum, event) => sum + event.amount, 0);
+
+        if (availableAmount < amountRubKopecks) {
+          throw new Error(`Недостаточно средств. Доступно: ${formatRubFromKopeks(availableAmount)}`);
+        }
+
+        // Create withdrawal request
+        const request = await tx.withdrawalRequest.create({
+          data: {
+            userId: user.id,
+            username,
+            amountRub: amountRubKopecks, // Store in kopecks
+            asset,
+            tonAddress: tonAddress.trim(),
+            status: 'PENDING',
+          },
+        });
+
+        // Reserve events FIFO until we cover the amount
+        let remainingAmount = amountRubKopecks;
+        const eventsToReserve: string[] = [];
+
+        for (const event of availableEvents) {
+          if (remainingAmount <= 0) break;
+          eventsToReserve.push(event.id);
+          remainingAmount -= event.amount;
+        }
+
+        if (remainingAmount > 0) {
+          // Should not happen if availableAmount >= amountRubKopecks, but double-check
+          throw new Error('Не удалось зарезервировать достаточную сумму');
+        }
+
+        // Update events: set withdrawal_request_id
+        await tx.referralEvent.updateMany({
+          where: {
+            id: {
+              in: eventsToReserve,
+            },
+          },
+          data: {
+            withdrawalRequestId: request.id,
+          },
+        });
+
+        return request;
+      });
+    } catch (txError) {
+      const errorMessage = txError instanceof Error ? txError.message : 'Unknown error';
+      if (errorMessage.includes('Недостаточно средств')) {
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 400 }
+        );
+      }
+      throw txError;
+    }
 
     // Send email notification
     const adminUrl = process.env.NEXT_PUBLIC_APP_BASE_URL 
