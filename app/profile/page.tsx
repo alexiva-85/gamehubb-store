@@ -537,12 +537,26 @@ export default function ProfilePage() {
                       {copied ? 'Скопировано' : 'Скопировать'}
                     </button>
                   </div>
+                  <Link
+                    href="/referral"
+                    className="block w-full mt-3 px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium text-center"
+                  >
+                    Как это работает
+                  </Link>
                 </div>
               ) : (
-                <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
-                  <p className="text-sm text-zinc-400 text-center">
-                    Твоя ссылка появится здесь после запуска реферальной программы.
-                  </p>
+                <div className="space-y-3">
+                  <div className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-4">
+                    <p className="text-sm text-zinc-400 text-center">
+                      Твоя ссылка появится здесь после запуска реферальной программы.
+                    </p>
+                  </div>
+                  <Link
+                    href="/referral"
+                    className="block w-full px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded-lg hover:bg-[#333] transition-colors text-sm font-medium text-center"
+                  >
+                    Как это работает
+                  </Link>
                 </div>
               )}
             </>
