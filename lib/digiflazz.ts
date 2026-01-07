@@ -67,31 +67,41 @@ async function digiflazzRequest(path: string, body: any): Promise<any> {
 
 /**
  * Get Digiflazz price list
+ * Signature for /v1/daftar-harga: md5(username + apiKey + "pricelist")
  */
 export async function digiflazzPriceList(): Promise<any> {
-  const refId = `price-${Date.now()}`;
-  const signature = generateSignature(refId);
+  if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
+    throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
+  }
+  
+  // For daftar-harga, signature is md5(username + apiKey + "pricelist")
+  const signatureData = `${DIGIFLAZZ_USERNAME}${DIGIFLAZZ_API_KEY}pricelist`;
+  const signature = crypto.createHash('md5').update(signatureData).digest('hex');
 
-  return digiflazzRequest('/price-list', {
+  return digiflazzRequest('/daftar-harga', {
     cmd: 'prepaid',
     username: DIGIFLAZZ_USERNAME,
     sign: signature,
-    ref_id: refId,
   });
 }
 
 /**
  * Get Digiflazz balance
+ * Signature for /v1/cek-saldo: md5(username + apiKey + "depo")
  */
 export async function digiflazzBalance(): Promise<any> {
-  const refId = `balance-${Date.now()}`;
-  const signature = generateSignature(refId);
+  if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
+    throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
+  }
+  
+  // For cek-saldo, signature is md5(username + apiKey + "depo")
+  const signatureData = `${DIGIFLAZZ_USERNAME}${DIGIFLAZZ_API_KEY}depo`;
+  const signature = crypto.createHash('md5').update(signatureData).digest('hex');
 
   return digiflazzRequest('/cek-saldo', {
     cmd: 'deposit',
     username: DIGIFLAZZ_USERNAME,
     sign: signature,
-    ref_id: refId,
   });
 }
 
