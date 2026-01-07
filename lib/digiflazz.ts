@@ -78,7 +78,7 @@ export async function digiflazzPriceList(): Promise<any> {
   const signatureData = `${DIGIFLAZZ_USERNAME}${DIGIFLAZZ_API_KEY}pricelist`;
   const signature = crypto.createHash('md5').update(signatureData).digest('hex');
 
-  return digiflazzRequest('/daftar-harga', {
+  return digiflazzRequest('/price-list', {
     cmd: 'prepaid',
     username: DIGIFLAZZ_USERNAME,
     sign: signature,
