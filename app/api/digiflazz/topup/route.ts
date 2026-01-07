@@ -12,16 +12,41 @@ function isTopupEnabled(): boolean {
 
 // Determine status from Digiflazz response
 function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
-  if (response.rc === '0' || response.rc === 0) {
-    const dataStr = typeof response.data === 'string' ? response.data.toLowerCase() : '';
+  // Priority 1: Check data.status field (if data is an object)
+  if (response.data && typeof response.data === 'object' && response.data.status) {
+    const status = String(response.data.status).trim();
+    if (status.toLowerCase() === 'pending') {
+      return 'PENDING';
+    }
+    if (status.toLowerCase() === 'sukses' || status.toLowerCase() === 'success') {
+      return 'SUCCESS';
+    }
+    if (status.toLowerCase() === 'gagal' || status.toLowerCase() === 'failed') {
+      return 'FAILED';
+    }
+  }
+
+  // Priority 2: Check data as string
+  if (response.data && typeof response.data === 'string') {
+    const dataStr = response.data.toLowerCase();
     if (dataStr.includes('sukses') || dataStr.includes('success')) {
       return 'SUCCESS';
     }
     if (dataStr.includes('pending') || dataStr.includes('proses')) {
       return 'PENDING';
     }
-    return 'SENT';
+    if (dataStr.includes('gagal') || dataStr.includes('failed')) {
+      return 'FAILED';
+    }
   }
+
+  // Priority 3: Fallback to rc field
+  // Don't treat rc=="" as error if data.status is present
+  if (response.rc === '0' || response.rc === 0) {
+    return 'SUCCESS';
+  }
+
+  // Default: FAILED
   return 'FAILED';
 }
 
@@ -64,36 +89,28 @@ export async function POST(request: NextRequest) {
     const buyerSkuCode = buyer_sku_code.trim();
     const customerNo = customer_no.trim();
 
-    // Check for existing transaction (idempotency)
+    // Strict idempotency: check for existing transaction by ref_id
     const existing = await prisma.digiflazzTransaction.findUnique({
       where: { refId },
     });
 
     if (existing) {
-      // If status is SUCCESS, PENDING, or SENT, return cached response
-      if (existing.status === 'SUCCESS' || existing.status === 'PENDING' || existing.status === 'SENT') {
-        const cachedResponse = existing.digiflazzResponse || { message: 'Transaction already processed' };
-        return NextResponse.json(
-          {
-            cached: true,
-            data: cachedResponse,
-          },
-          { status: 200 }
-        );
-      }
-      // If FAILED or CREATED, allow retry (will update existing record)
+      // If ref_id already exists, return cached response (strict idempotency)
+      // Never call Digiflazz again for the same ref_id
+      const cachedResponse = existing.digiflazzResponse || { message: 'Transaction already processed' };
+      return NextResponse.json(
+        {
+          cached: true,
+          data: cachedResponse,
+        },
+        { status: 200 }
+      );
     }
 
-    // Create or update transaction record
-    const transaction = await prisma.digiflazzTransaction.upsert({
-      where: { refId },
-      create: {
+    // Create new transaction record
+    const transaction = await prisma.digiflazzTransaction.create({
+      data: {
         refId,
-        buyerSkuCode,
-        customerNo,
-        status: 'CREATED',
-      },
-      update: {
         buyerSkuCode,
         customerNo,
         status: 'CREATED',
