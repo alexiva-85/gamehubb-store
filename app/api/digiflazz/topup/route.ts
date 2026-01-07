@@ -72,8 +72,12 @@ export async function POST(request: NextRequest) {
     if (existing) {
       // If status is SUCCESS, PENDING, or SENT, return cached response
       if (existing.status === 'SUCCESS' || existing.status === 'PENDING' || existing.status === 'SENT') {
+        const cachedResponse = existing.digiflazzResponse || { message: 'Transaction already processed' };
         return NextResponse.json(
-          existing.digiflazzResponse || { message: 'Transaction already processed' },
+          {
+            cached: true,
+            data: cachedResponse,
+          },
           { status: 200 }
         );
       }
@@ -146,7 +150,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(digiflazzResponse, { status: 200 });
+    return NextResponse.json(
+      {
+        cached: false,
+        data: digiflazzResponse,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('[digiflazz/topup] error', {
       message: error instanceof Error ? error.message : 'Unknown error',
