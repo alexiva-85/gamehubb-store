@@ -125,14 +125,30 @@ export async function digiflazzTransaction(payload: {
 
 /**
  * Get Digiflazz transaction status
+ * Signature: md5(username + apiKey + refId)
+ * Endpoint: POST /v1/transaction with cmd: "status"
  */
-export async function digiflazzTransactionStatus(refId: string): Promise<any> {
+export async function digiflazzStatus(refId: string): Promise<any> {
+  if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
+    throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
+  }
+  
+  // Signature: md5(username + apiKey + refId)
   const signature = generateSignature(refId);
 
-  return digiflazzRequest('/transaction-status', {
+  return digiflazzRequest('/transaction', {
+    cmd: 'status',
     username: DIGIFLAZZ_USERNAME,
-    sign: signature,
     ref_id: refId,
+    sign: signature,
   });
+}
+
+/**
+ * Get Digiflazz transaction status (legacy alias)
+ * @deprecated Use digiflazzStatus() instead
+ */
+export async function digiflazzTransactionStatus(refId: string): Promise<any> {
+  return digiflazzStatus(refId);
 }
 
