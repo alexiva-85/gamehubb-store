@@ -49,6 +49,14 @@ enum WithdrawalStatus {
   REJECTED
 }
 
+enum DigiflazzTransactionStatus {
+  CREATED
+  SENT
+  SUCCESS
+  FAILED
+  PENDING
+}
+
 model Product {
   id          String   @id @default(uuid())
   sku         String   @unique
@@ -159,4 +167,20 @@ model WithdrawalRequest {
   @@index([userId, status])
   @@index([status])
   @@map("withdrawal_requests")
+}
+
+model DigiflazzTransaction {
+  id                String                      @id @default(uuid())
+  refId             String                      @unique @map("ref_id")
+  buyerSkuCode      String                      @map("buyer_sku_code")
+  customerNo        String                      @map("customer_no")
+  amount            Int?                        @map("amount")
+  status            DigiflazzTransactionStatus  @default(CREATED)
+  digiflazzResponse Json?                       @map("digiflazz_response")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+
+  @@index([refId])
+  @@index([status])
+  @@map("digiflazz_transactions")
 }

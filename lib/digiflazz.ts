@@ -106,7 +106,34 @@ export async function digiflazzBalance(): Promise<any> {
 }
 
 /**
- * Create Digiflazz transaction
+ * Create Digiflazz topup transaction
+ * Signature: md5(username + apiKey + refId)
+ * Endpoint: POST /v1/transaction
+ */
+export async function digiflazzTopup(params: {
+  refId: string;
+  buyerSkuCode: string;
+  customerNo: string;
+}): Promise<any> {
+  if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
+    throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
+  }
+  
+  // Signature: md5(username + apiKey + refId)
+  const signature = generateSignature(params.refId);
+
+  return digiflazzRequest('/transaction', {
+    username: DIGIFLAZZ_USERNAME,
+    buyer_sku_code: params.buyerSkuCode,
+    customer_no: params.customerNo,
+    ref_id: params.refId,
+    sign: signature,
+  });
+}
+
+/**
+ * Create Digiflazz transaction (legacy alias)
+ * @deprecated Use digiflazzTopup() instead
  */
 export async function digiflazzTransaction(payload: {
   sku_code: string;
@@ -114,12 +141,10 @@ export async function digiflazzTransaction(payload: {
   ref_id: string;
   [key: string]: any;
 }): Promise<any> {
-  const signature = generateSignature(payload.ref_id);
-
-  return digiflazzRequest('/transaction', {
-    username: DIGIFLAZZ_USERNAME,
-    sign: signature,
-    ...payload,
+  return digiflazzTopup({
+    refId: payload.ref_id,
+    buyerSkuCode: payload.sku_code,
+    customerNo: payload.customer_no,
   });
 }
 
