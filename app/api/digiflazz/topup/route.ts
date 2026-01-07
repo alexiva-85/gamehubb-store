@@ -142,6 +142,15 @@ export async function POST(request: NextRequest) {
     // Determine status from response
     const newStatus = determineStatus(digiflazzResponse);
 
+    // Log status determination for debugging
+    console.log('[digiflazz/topup] status determined', {
+      ref_id: refId,
+      determined_status: newStatus,
+      response_data_status: digiflazzResponse?.data?.status,
+      response_data_rc: digiflazzResponse?.data?.rc,
+      response_rc: digiflazzResponse?.rc,
+    });
+
     // Update transaction with response
     await prisma.digiflazzTransaction.update({
       where: { id: transaction.id },
