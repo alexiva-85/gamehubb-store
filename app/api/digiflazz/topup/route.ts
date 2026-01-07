@@ -11,41 +11,38 @@ function isTopupEnabled(): boolean {
 }
 
 // Determine status from Digiflazz response
-// Priority: data.status field > data string > rc field
+// Priority: data.status field > data.rc field
 function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
-  // Priority 1: Check data.status field (if data is an object)
-  // This is the most reliable indicator from Digiflazz
-  if (response.data && typeof response.data === 'object' && response.data.status) {
-    const status = String(response.data.status).trim().toLowerCase();
-    if (status === 'pending') {
+  // Priority 1: Check data.status field (most reliable indicator from Digiflazz)
+  if (response?.data?.status) {
+    const status = String(response.data.status).trim();
+    const statusLower = status.toLowerCase();
+    
+    if (statusLower === 'pending') {
       return 'PENDING';
     }
-    if (status === 'sukses' || status === 'success') {
+    if (statusLower === 'sukses' || statusLower === 'success') {
       return 'SUCCESS';
     }
-    if (status === 'gagal' || status === 'failed') {
+    if (statusLower === 'gagal' || statusLower === 'failed') {
       return 'FAILED';
     }
   }
 
-  // Priority 2: Check data as string
-  if (response.data && typeof response.data === 'string') {
-    const dataStr = response.data.toLowerCase();
-    if (dataStr.includes('sukses') || dataStr.includes('success')) {
+  // Fallback: Check data.rc field (if data.status is not present)
+  if (response?.data?.rc !== undefined) {
+    if (response.data.rc === '0' || response.data.rc === 0) {
       return 'SUCCESS';
     }
-    if (dataStr.includes('pending') || dataStr.includes('proses')) {
-      return 'PENDING';
-    }
-    if (dataStr.includes('gagal') || dataStr.includes('failed')) {
-      return 'FAILED';
-    }
+    return 'FAILED';
   }
 
-  // Priority 3: Fallback to rc field
-  // Don't treat rc=="" as error if data.status is present (already checked above)
-  if (response.rc === '0' || response.rc === 0) {
-    return 'SUCCESS';
+  // Fallback: Check top-level rc field
+  if (response?.rc !== undefined) {
+    if (response.rc === '0' || response.rc === 0) {
+      return 'SUCCESS';
+    }
+    return 'FAILED';
   }
 
   // Default: FAILED
