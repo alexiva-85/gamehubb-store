@@ -11,17 +11,19 @@ function isTopupEnabled(): boolean {
 }
 
 // Determine status from Digiflazz response
+// Priority: data.status field > data string > rc field
 function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
   // Priority 1: Check data.status field (if data is an object)
+  // This is the most reliable indicator from Digiflazz
   if (response.data && typeof response.data === 'object' && response.data.status) {
-    const status = String(response.data.status).trim();
-    if (status.toLowerCase() === 'pending') {
+    const status = String(response.data.status).trim().toLowerCase();
+    if (status === 'pending') {
       return 'PENDING';
     }
-    if (status.toLowerCase() === 'sukses' || status.toLowerCase() === 'success') {
+    if (status === 'sukses' || status === 'success') {
       return 'SUCCESS';
     }
-    if (status.toLowerCase() === 'gagal' || status.toLowerCase() === 'failed') {
+    if (status === 'gagal' || status === 'failed') {
       return 'FAILED';
     }
   }
@@ -41,7 +43,7 @@ function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILE
   }
 
   // Priority 3: Fallback to rc field
-  // Don't treat rc=="" as error if data.status is present
+  // Don't treat rc=="" as error if data.status is present (already checked above)
   if (response.rc === '0' || response.rc === 0) {
     return 'SUCCESS';
   }
@@ -90,18 +92,18 @@ export async function POST(request: NextRequest) {
     const customerNo = customer_no.trim();
 
     // Strict idempotency: check for existing transaction by ref_id
+    // If ref_id already exists, ALWAYS return cached response, regardless of status
     const existing = await prisma.digiflazzTransaction.findUnique({
       where: { refId },
     });
 
     if (existing) {
-      // If ref_id already exists, return cached response (strict idempotency)
-      // Never call Digiflazz again for the same ref_id
-      const cachedResponse = existing.digiflazzResponse || { message: 'Transaction already processed' };
+      // Strict idempotency: never call Digiflazz again for the same ref_id
       return NextResponse.json(
         {
           cached: true,
-          data: cachedResponse,
+          data: existing.digiflazzResponse ?? null,
+          status: existing.status,
         },
         { status: 200 }
       );
