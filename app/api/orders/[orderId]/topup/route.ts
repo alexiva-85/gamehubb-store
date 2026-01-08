@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { digiflazzTopup } from '@/lib/digiflazz';
-import { makeDigiflazzRefId } from '@/lib/digiflazz-ref';
+import { generateDigiflazzRefId } from '@/lib/digiflazz-ref';
 
 // Use Node.js runtime for undici and Prisma
 export const runtime = 'nodejs';
@@ -60,10 +60,9 @@ export async function POST(
     if (!isTopupEnabled()) {
       return NextResponse.json(
         { 
-          error: 'Digiflazz topup is disabled',
           code: 'DIGIFLAZZ_DISABLED'
         },
-        { status: 403 }
+        { status: 409 }
       );
     }
 
@@ -74,7 +73,7 @@ export async function POST(
 
     if (!order) {
       return NextResponse.json(
-        { error: 'Order not found' },
+        { error: 'ORDER_NOT_FOUND' },
         { status: 404 }
       );
     }
@@ -82,10 +81,7 @@ export async function POST(
     // Validate required fields for Digiflazz
     if (!order.productSku || !order.customerNo) {
       return NextResponse.json(
-        { 
-          error: 'Order missing required fields for Digiflazz topup',
-          details: 'productSku and customerNo are required'
-        },
+        { error: 'MISSING_ORDER_FIELDS' },
         { status: 400 }
       );
     }
@@ -93,9 +89,9 @@ export async function POST(
     // Generate or get existing ref_id
     let refId = order.digiflazzRefId;
     if (!refId) {
-      refId = makeDigiflazzRefId(orderId);
+      refId = generateDigiflazzRefId(orderId);
       
-      // Save ref_id to order (deterministic, so safe to update)
+      // Save ref_id to order (generate once and save)
       await prisma.order.update({
         where: { id: orderId },
         data: { digiflazzRefId: refId },
@@ -188,7 +184,7 @@ export async function POST(
 
     return NextResponse.json(
       {
-        error: 'Failed to process Digiflazz topup',
+        error: 'DIGIFLAZZ_ERROR',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 502 }

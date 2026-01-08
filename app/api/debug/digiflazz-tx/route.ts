@@ -6,19 +6,19 @@ export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   const ref_id = req.nextUrl.searchParams.get('ref_id');
-  const order_id = req.nextUrl.searchParams.get('order_id');
+  const orderId = req.nextUrl.searchParams.get('orderId');
 
-  if (!ref_id && !order_id) {
-    return Response.json({ error: 'ref_id or order_id required' }, { status: 400 });
+  if (!ref_id && !orderId) {
+    return Response.json({ error: 'ref_id or orderId required' }, { status: 400 });
   }
 
-  let row = null;
+  let rows: any[] = [];
   let count = 0;
   let searchBy = '';
 
   if (ref_id) {
     // Find transaction by refId (unique constraint)
-    row = await prisma.digiflazzTransaction.findUnique({
+    const row = await prisma.digiflazzTransaction.findUnique({
       where: { refId: ref_id },
       include: {
         order: {
@@ -32,15 +32,13 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    count = await prisma.digiflazzTransaction.count({
-      where: { refId: ref_id },
-    });
-
+    rows = row ? [row] : [];
+    count = rows.length;
     searchBy = 'ref_id';
-  } else if (order_id) {
-    // Find transactions by orderId
-    const rows = await prisma.digiflazzTransaction.findMany({
-      where: { orderId: order_id },
+  } else if (orderId) {
+    // Find transactions by orderId (limit 20)
+    rows = await prisma.digiflazzTransaction.findMany({
+      where: { orderId: orderId },
       include: {
         order: {
           select: {
@@ -51,31 +49,37 @@ export async function GET(req: NextRequest) {
           },
         },
       },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
     });
 
     count = rows.length;
-    row = rows.length > 0 ? rows[0] : null; // Return first match for compatibility
-    searchBy = 'order_id';
+    searchBy = 'orderId';
   }
+
+  // Format response without secrets
+  const formattedRows = rows.map(row => ({
+    refId: row.refId,
+    orderId: row.orderId,
+    status: row.status,
+    buyerSkuCode: row.buyerSkuCode,
+    customerNo: row.customerNo,
+    amount: row.amount,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    order: row.order,
+    // Don't return digiflazzResponse to avoid exposing secrets
+  }));
 
   return Response.json({
     search_by: searchBy,
-    ref_id: ref_id || row?.refId || null,
-    order_id: order_id || row?.orderId || null,
-    found: !!row,
+    ref_id: ref_id || null,
+    orderId: orderId || null,
+    found: rows.length > 0,
     count,
-    row: row
-      ? {
-          refId: row.refId,
-          orderId: row.orderId,
-          status: row.status,
-          buyerSkuCode: row.buyerSkuCode,
-          customerNo: row.customerNo,
-          createdAt: row.createdAt,
-          updatedAt: row.updatedAt,
-          order: row.order,
-        }
-      : null,
+    rows: formattedRows,
+    // For backward compatibility, include first row as 'row'
+    row: formattedRows.length > 0 ? formattedRows[0] : null,
   });
 }
 
