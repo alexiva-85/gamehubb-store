@@ -104,6 +104,9 @@ model Order {
   totalAmount   Int         @map("total_amount")
   discountAmount Int        @default(0) @map("discount_amount")
   status        OrderStatus @default(PENDING)
+  productSku    String?     @map("product_sku")
+  customerNo    String?     @map("customer_no")
+  digiflazzRefId String?    @unique @map("digiflazz_ref_id")
   paidAt        DateTime?   @map("paid_at")
   fulfilledAt   DateTime?  @map("fulfilled_at")
   refundedAt    DateTime?  @map("refunded_at")
@@ -112,10 +115,12 @@ model Order {
 
   user          User            @relation("UserOrders", fields: [userId], references: [id])
   referralEvents ReferralEvent[]
+  digiflazzTransactions DigiflazzTransaction[]
 
   @@index([userId])
   @@index([status])
   @@index([paidAt])
+  @@index([digiflazzRefId])
   @@map("orders")
 }
 
@@ -172,6 +177,7 @@ model WithdrawalRequest {
 model DigiflazzTransaction {
   id                String                      @id @default(uuid())
   refId             String                      @unique @map("ref_id")
+  orderId           String?                     @map("order_id")
   buyerSkuCode      String                      @map("buyer_sku_code")
   customerNo        String                      @map("customer_no")
   amount            Int?                        @map("amount")
@@ -180,7 +186,10 @@ model DigiflazzTransaction {
   createdAt         DateTime                    @default(now()) @map("created_at")
   updatedAt         DateTime                    @updatedAt @map("updated_at")
 
+  order             Order?                      @relation(fields: [orderId], references: [id])
+
   @@index([refId])
   @@index([status])
+  @@index([orderId])
   @@map("digiflazz_transactions")
 }
