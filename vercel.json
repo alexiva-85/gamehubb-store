@@ -1,5 +1,5 @@
 {
   "crons": [
-    { "path": "/api/cron/digiflazz/poll", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/digiflazz/poll", "schedule": "0 2 * * *" }
   ]
 }
