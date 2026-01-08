@@ -125,9 +125,14 @@ function checkAdminKey(searchParams: SearchParams): boolean {
 export default async function AdminPricesPage({
   searchParams,
 }: {
-  searchParams: Promise<SearchParams>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const params = await searchParams;
+  const rawParams = await searchParams;
+
+  // Normalize searchParams: convert arrays to single strings
+  const params = Object.fromEntries(
+    Object.entries(rawParams ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+  ) as SearchParams;
 
   // Check admin key
   if (!checkAdminKey(params)) {
@@ -145,11 +150,16 @@ export default async function AdminPricesPage({
 
   const data = await getProducts(params);
 
+  // Normalize for PricesTable component
+  const normalizedSearchParams = Object.fromEntries(
+    Object.entries(rawParams ?? {}).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+  ) as Record<string, string | undefined>;
+
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <h1 className="text-3xl font-bold mb-6 text-white">Админ-панель: Цены товаров</h1>
       <Suspense fallback={<div className="text-zinc-400">Загрузка...</div>}>
-        <PricesTable initialData={data} searchParams={params} />
+        <PricesTable initialData={data} searchParams={normalizedSearchParams} />
       </Suspense>
     </div>
   );
