@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { digiflazzStatus } from '@/lib/digiflazz';
 
@@ -6,14 +6,31 @@ import { digiflazzStatus } from '@/lib/digiflazz';
 export const runtime = 'nodejs';
 
 // Check cron secret
-function checkCronSecret(request: NextRequest): boolean {
+function checkCronSecret(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
+  
+  // If CRON_SECRET not set, allow (dev mode)
   if (!secret) {
-    // If env not set, allow (for dev)
     return true;
   }
+
+  // Check Authorization Bearer token (for Vercel Cron)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader) {
+    // Extract token from "Bearer <token>" format
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    if (match && match[1] === secret) {
+      return true;
+    }
+  }
+
+  // Check x-cron-secret header (for manual testing)
   const headerSecret = request.headers.get('x-cron-secret');
-  return headerSecret === secret;
+  if (headerSecret === secret) {
+    return true;
+  }
+
+  return false;
 }
 
 // Determine status from Digiflazz response
@@ -205,7 +222,8 @@ async function processBatch(
   };
 }
 
-export async function POST(request: NextRequest) {
+// Common handler for both GET and POST
+async function handler(request: Request) {
   try {
     // Check cron secret
     if (!checkCronSecret(request)) {
@@ -318,4 +336,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// GET handler for Vercel Cron (Vercel Cron uses GET requests)
+export async function GET(req: Request) {
+  return handler(req);
+}
+
+// POST handler for manual testing
+export async function POST(req: Request) {
+  return handler(req);
 }
