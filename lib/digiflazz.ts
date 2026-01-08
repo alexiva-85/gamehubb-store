@@ -86,6 +86,26 @@ export async function digiflazzPriceList(): Promise<any> {
 }
 
 /**
+ * Get Digiflazz price list for pasca (postpaid)
+ * Signature for /v1/daftar-harga: md5(username + apiKey + "pricelist")
+ */
+export async function digiflazzPriceListPasca(): Promise<any> {
+  if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
+    throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
+  }
+  
+  // For daftar-harga, signature is md5(username + apiKey + "pricelist")
+  const signatureData = `${DIGIFLAZZ_USERNAME}${DIGIFLAZZ_API_KEY}pricelist`;
+  const signature = crypto.createHash('md5').update(signatureData).digest('hex');
+
+  return digiflazzRequest('/price-list', {
+    cmd: 'pasca',
+    username: DIGIFLAZZ_USERNAME,
+    sign: signature,
+  });
+}
+
+/**
  * Get Digiflazz balance
  * Signature for /v1/cek-saldo: md5(username + apiKey + "depo")
  */

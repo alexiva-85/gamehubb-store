@@ -7,6 +7,12 @@ export const runtime = 'nodejs';
 
 // Check cron secret
 function checkCronSecret(request: Request): boolean {
+  // Allow requests from Vercel Cron (by User-Agent)
+  const userAgent = request.headers.get('user-agent');
+  if (userAgent && userAgent.startsWith('vercel-cron/')) {
+    return true;
+  }
+
   const secret = process.env.CRON_SECRET;
   
   // If CRON_SECRET not set, allow (dev mode)
@@ -14,7 +20,7 @@ function checkCronSecret(request: Request): boolean {
     return true;
   }
 
-  // Check Authorization Bearer token (for Vercel Cron)
+  // Check Authorization Bearer token (for Vercel Cron with secret)
   const authHeader = request.headers.get('authorization');
   if (authHeader) {
     // Extract token from "Bearer <token>" format

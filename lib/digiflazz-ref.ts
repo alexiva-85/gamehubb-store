@@ -22,7 +22,6 @@ export function makeDigiflazzRefId(orderId: string): string {
   return prefixed;
 }
 
-
 /**
  * Generate unique Digiflazz ref_id from orderId with timestamp
  * Format: "ORDER_" + sanitized(orderId) + "_" + tsShort
