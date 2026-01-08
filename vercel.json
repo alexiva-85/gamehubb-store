@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/cron/digiflazz/poll", "schedule": "*/5 * * * *" }
+  ]
+}
