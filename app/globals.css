@@ -9,6 +9,9 @@
   --accent-hover: #3d8fdf;
   --text-muted: #a0a0a0;
   --text-secondary: #d0d0d0;
+  /* Telegram WebApp viewport variables - defaults for non-Telegram environments */
+  --tg-viewport-height: 100vh;
+  --tg-viewport-stable-height: 100vh;
 }
 
 @theme inline {

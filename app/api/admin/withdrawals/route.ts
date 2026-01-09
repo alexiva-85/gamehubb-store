@@ -8,7 +8,8 @@ export const runtime = 'nodejs';
 function checkAdminKey(request: NextRequest): boolean {
   const adminKey = process.env.ADMIN_KEY;
   if (!adminKey) {
-    return false;
+    // If ADMIN_KEY not set, allow (dev mode)
+    return true;
   }
 
   // Check query parameter

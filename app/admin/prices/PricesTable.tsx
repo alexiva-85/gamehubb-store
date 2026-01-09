@@ -14,7 +14,7 @@ interface Product {
   basePriceIdr: number | null;
   priceMode: PriceMode;
   priceRub: number;
-  updatedAt: Date;
+  updatedAt: string; // ISO string from server
 }
 
 interface PricesTableProps {
@@ -38,6 +38,12 @@ export default function PricesTable({ initialData, searchParams }: PricesTablePr
   const [editPriceRub, setEditPriceRub] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Deterministic number formatter (fixes hydration mismatch)
+  const formatInt = (v: number) => {
+    const n = Math.round(v);
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
 
   // Filters
   const [searchQuery, setSearchQuery] = useState(searchParams.q || '');
@@ -238,7 +244,7 @@ export default function PricesTable({ initialData, searchParams }: PricesTablePr
                       </span>
                     </td>
                     <td className="py-2 px-2 text-right text-zinc-400">
-                      {product.basePriceIdr ? product.basePriceIdr.toLocaleString() : '-'}
+                      {product.basePriceIdr != null ? formatInt(product.basePriceIdr) : '-'}
                     </td>
                     <td className="py-2 px-2">
                       <span
@@ -263,7 +269,7 @@ export default function PricesTable({ initialData, searchParams }: PricesTablePr
                           min="1"
                         />
                       ) : (
-                        product.priceRub.toLocaleString('ru-RU')
+                        formatInt(product.priceRub)
                       )}
                     </td>
                     <td className="py-2 px-2 text-zinc-400 text-xs">
