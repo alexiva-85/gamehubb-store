@@ -260,6 +260,20 @@ export default function WithdrawalDetailsDialog({
                         </p>
                       </div>
                     )}
+
+                    {/* Payout Notes */}
+                    {(() => {
+                      const notes = details.payoutNotes ?? 
+                        (details.payoutSnapshot && typeof details.payoutSnapshot === 'object' && 'notes' in details.payoutSnapshot 
+                          ? String(details.payoutSnapshot.notes) 
+                          : null);
+                      return notes && notes.trim().length > 0 ? (
+                        <div className="mb-3">
+                          <p className="text-xs text-zinc-400 mb-1">Примечания к выплате</p>
+                          <p className="text-sm text-zinc-200">{notes}</p>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 </>
               )}
