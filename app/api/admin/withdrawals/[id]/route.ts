@@ -7,6 +7,73 @@ import { toNumberSafe } from '@/lib/utils';
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authError = requireAdmin(request);
+    if (authError) {
+      return authError;
+    }
+
+    const { id } = await params;
+
+    const withdrawalRequest = await prisma.withdrawalRequest.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            tgId: true,
+          },
+        },
+      },
+    });
+
+    if (!withdrawalRequest) {
+      return NextResponse.json(
+        { error: 'Withdrawal request not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      id: withdrawalRequest.id,
+      tgUserId: withdrawalRequest.user.tgId,
+      username: withdrawalRequest.username,
+      amountRub: Math.floor(withdrawalRequest.amountRub / 100), // Convert kopecks to rubles for UI
+      asset: withdrawalRequest.asset,
+      tonAddress: withdrawalRequest.tonAddress,
+      status: withdrawalRequest.status,
+      adminNote: withdrawalRequest.adminNote,
+      txHash: withdrawalRequest.txHash,
+      paidAt: withdrawalRequest.paidAt?.toISOString() || null,
+      createdAt: withdrawalRequest.createdAt.toISOString(),
+      updatedAt: withdrawalRequest.updatedAt.toISOString(),
+      // Payout snapshot fields
+      payoutAsset: withdrawalRequest.payoutAsset,
+      payoutAmount: toNumberSafe(withdrawalRequest.payoutAmount),
+      payoutBaseRub: toNumberSafe(withdrawalRequest.payoutBaseRub),
+      exchangeRate: toNumberSafe(withdrawalRequest.exchangeRate),
+      rateSource: withdrawalRequest.rateSource,
+      rateCapturedAt: withdrawalRequest.rateCapturedAt?.toISOString() || null,
+      payoutFeeRub: toNumberSafe(withdrawalRequest.payoutFeeRub),
+      payoutNotes: withdrawalRequest.payoutNotes,
+      payoutSnapshot: withdrawalRequest.payoutSnapshot,
+    });
+  } catch (error) {
+    console.error('[admin/withdrawals/[id]] GET error', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+    });
+
+    return NextResponse.json(
+      { error: 'Internal error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
