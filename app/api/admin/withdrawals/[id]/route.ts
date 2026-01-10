@@ -1,36 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { formatRubFromKopeks } from '@/lib/money';
+import { Prisma } from '@prisma/client';
+import { requireAdmin } from '@/lib/adminAuth';
 
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';
-
-function checkAdminKey(key: string | null): boolean {
-  const adminKey = process.env.ADMIN_KEY;
-  if (!adminKey) {
-    // If ADMIN_KEY not set, allow (dev mode)
-    return true;
-  }
-  return key === adminKey;
-}
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authError = requireAdmin(request);
+    if (authError) {
+      return authError;
+    }
+
     const { id } = await params;
     const body = await request.json();
-    const { key, status, adminNote, txHash } = body;
-
-    // Check admin key from body or header
-    const keyFromHeader = request.headers.get('x-admin-key');
-    if (!checkAdminKey(key) && !checkAdminKey(keyFromHeader)) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const { status, adminNote, txHash, payout } = body;
 
     if (!status || !['APPROVED', 'PAID', 'REJECTED'].includes(status)) {
       return NextResponse.json(
@@ -47,10 +36,15 @@ export async function PATCH(
       );
     }
 
-    // Get current withdrawal request to check status
+    // Get current withdrawal request to check status and payout fields
     const currentRequest = await prisma.withdrawalRequest.findUnique({
       where: { id },
-      select: { status: true },
+      select: { 
+        status: true,
+        payoutAsset: true,
+        payoutAmount: true,
+        payoutBaseRub: true,
+      },
     });
 
     if (!currentRequest) {
@@ -60,12 +54,95 @@ export async function PATCH(
       );
     }
 
-    // Idempotency guard: cannot mark as PAID if already PAID
-    if (status === 'PAID' && currentRequest.status === 'PAID') {
-      return NextResponse.json(
-        { error: 'Request is already marked as PAID' },
-        { status: 400 }
-      );
+    // Immutability guard: if already PAID, prevent changes to payout fields
+    if (currentRequest.status === 'PAID') {
+      // Check if trying to change payout fields
+      if (payout !== undefined) {
+        return NextResponse.json(
+          { 
+            code: 'IMMUTABLE_PAYOUT',
+            error: 'Cannot modify payout snapshot after request is marked as PAID' 
+          },
+          { status: 400 }
+        );
+      }
+      // Allow other updates (adminNote, txHash) but not status change
+      if (status !== 'PAID') {
+        return NextResponse.json(
+          { 
+            code: 'IMMUTABLE_STATUS',
+            error: 'Cannot change status of a PAID request' 
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validation for PAID status: require payout snapshot
+    if (status === 'PAID') {
+      if (!payout || typeof payout !== 'object') {
+        return NextResponse.json(
+          { 
+            code: 'MISSING_PAYOUT',
+            error: 'Payout snapshot is required when marking request as PAID' 
+          },
+          { status: 400 }
+        );
+      }
+
+      // Required fields
+      if (!payout.asset || !['RUB', 'USDT', 'TON'].includes(payout.asset)) {
+        return NextResponse.json(
+          { 
+            code: 'INVALID_PAYOUT_ASSET',
+            error: 'payout.asset is required and must be RUB, USDT, or TON' 
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!payout.amount || isNaN(Number(payout.amount))) {
+        return NextResponse.json(
+          { 
+            code: 'INVALID_PAYOUT_AMOUNT',
+            error: 'payout.amount is required and must be a valid number' 
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!payout.baseRub || isNaN(Number(payout.baseRub))) {
+        return NextResponse.json(
+          { 
+            code: 'INVALID_PAYOUT_BASE_RUB',
+            error: 'payout.baseRub is required and must be a valid number' 
+          },
+          { status: 400 }
+        );
+      }
+
+      // If asset is not RUB, require exchange rate
+      if (payout.asset !== 'RUB') {
+        if (!payout.rate || isNaN(Number(payout.rate))) {
+          return NextResponse.json(
+            { 
+              code: 'MISSING_EXCHANGE_RATE',
+              error: 'payout.rate is required when payout.asset is not RUB' 
+            },
+            { status: 400 }
+          );
+        }
+
+        if (!payout.rateSource || typeof payout.rateSource !== 'string') {
+          return NextResponse.json(
+            { 
+              code: 'MISSING_RATE_SOURCE',
+              error: 'payout.rateSource is required when payout.asset is not RUB' 
+            },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Update in transaction
@@ -84,6 +161,44 @@ export async function PATCH(
 
       if (status === 'PAID') {
         updateData.paidAt = new Date();
+
+        // Compute payout fields with synchronization
+        const asset = payout.asset;
+        const capturedAt = payout.rateCapturedAt ? new Date(payout.rateCapturedAt) : new Date();
+        const rateSource = payout.rateSource || 'MANUAL';
+        const exchangeRate = asset === 'RUB' ? null : new Prisma.Decimal(payout.rate);
+
+        // Set payout snapshot fields (top-level)
+        updateData.payoutAsset = asset;
+        updateData.payoutAmount = new Prisma.Decimal(payout.amount);
+        updateData.payoutBaseRub = new Prisma.Decimal(payout.baseRub);
+        updateData.exchangeRate = exchangeRate;
+        updateData.rateSource = rateSource; // Always set, even for RUB (at least "MANUAL")
+        updateData.rateCapturedAt = capturedAt; // Always set, even for RUB
+
+        if (payout.feeRub !== undefined) {
+          updateData.payoutFeeRub = payout.feeRub 
+            ? new Prisma.Decimal(payout.feeRub) 
+            : null;
+        }
+
+        if (payout.notes !== undefined) {
+          updateData.payoutNotes = payout.notes || null;
+        }
+
+        // Create payout snapshot JSON (synchronized with top-level fields)
+        updateData.payoutSnapshot = {
+          baseCurrency: 'RUB',
+          asset: asset,
+          amount: String(payout.amount),
+          baseRub: String(payout.baseRub),
+          exchangeRate: exchangeRate ? String(exchangeRate) : null,
+          rateSource: rateSource, // Same as top-level rateSource
+          rateCapturedAt: capturedAt.toISOString(), // Same as top-level rateCapturedAt
+          feeRub: payout.feeRub ? String(payout.feeRub) : null,
+          notes: payout.notes || null,
+          capturedAt: new Date().toISOString(),
+        };
       }
 
       const updated = await tx.withdrawalRequest.update({
@@ -132,12 +247,32 @@ export async function PATCH(
       return updated;
     });
 
+    // Serialize response (handle Decimal types)
+    const toNumberSafe = (v: any): number | null => {
+      if (v === null || v === undefined) return null;
+      if (typeof v === 'number') return v;
+      if (typeof v === 'bigint') return Number(v);
+      if (typeof v === 'object' && typeof (v as any).toNumber === 'function') {
+        return (v as any).toNumber();
+      }
+      return Number(v);
+    };
+
     return NextResponse.json({
       id: withdrawalRequest.id,
       status: withdrawalRequest.status,
       adminNote: withdrawalRequest.adminNote,
       txHash: withdrawalRequest.txHash,
       paidAt: withdrawalRequest.paidAt,
+      payoutAsset: withdrawalRequest.payoutAsset,
+      payoutAmount: toNumberSafe(withdrawalRequest.payoutAmount),
+      payoutBaseRub: toNumberSafe(withdrawalRequest.payoutBaseRub),
+      exchangeRate: toNumberSafe(withdrawalRequest.exchangeRate),
+      rateSource: withdrawalRequest.rateSource,
+      rateCapturedAt: withdrawalRequest.rateCapturedAt?.toISOString() || null,
+      payoutFeeRub: toNumberSafe(withdrawalRequest.payoutFeeRub),
+      payoutNotes: withdrawalRequest.payoutNotes,
+      payoutSnapshot: withdrawalRequest.payoutSnapshot,
     });
   } catch (error) {
     console.error('[admin/withdrawals/[id]] error', {

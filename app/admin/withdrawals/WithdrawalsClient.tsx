@@ -14,8 +14,19 @@ interface WithdrawalRequest {
   status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED';
   adminNote: string | null;
   txHash: string | null;
+  paidAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Payout snapshot fields
+  payoutAsset: 'RUB' | 'USDT' | 'TON' | null;
+  payoutAmount: number | null;
+  payoutBaseRub: number | null;
+  exchangeRate: number | null;
+  rateSource: string | null;
+  rateCapturedAt: string | null;
+  payoutFeeRub: number | null;
+  payoutNotes: string | null;
+  payoutSnapshot: any;
 }
 
 // Deterministic date/time formatter (fixes hydration mismatch)
@@ -23,6 +34,22 @@ const formatDateTime = (value: string | Date) => {
   const d = value instanceof Date ? value : new Date(value);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+// Deterministic number formatter (fixes hydration mismatch)
+const formatInt = (v: number | null | undefined): string => {
+  if (v === null || v === undefined) return '-';
+  const n = Math.round(v);
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
+// Deterministic decimal formatter (2 decimal places)
+const formatDecimal = (v: number | null | undefined): string => {
+  if (v === null || v === undefined) return '-';
+  const n = Math.round(v * 100) / 100;
+  const parts = n.toString().split('.');
+  const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return parts[1] ? `${intPart}.${parts[1].padEnd(2, '0')}` : intPart;
 };
 
 interface WithdrawalsClientProps {
@@ -40,6 +67,14 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adminNote, setAdminNote] = useState('');
   const [txHash, setTxHash] = useState('');
+  // Payout form state
+  const [payoutAsset, setPayoutAsset] = useState<'RUB' | 'USDT' | 'TON'>('RUB');
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [payoutBaseRub, setPayoutBaseRub] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('');
+  const [rateSource, setRateSource] = useState('MANUAL');
+  const [payoutFeeRub, setPayoutFeeRub] = useState('');
+  const [payoutNotes, setPayoutNotes] = useState('');
 
   useEffect(() => {
     fetchRequests(effectiveKey);
@@ -80,18 +115,45 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
       return;
     }
 
+    // Validate payout for PAID
+    if (status === 'PAID') {
+      if (!payoutAmount || !payoutBaseRub) {
+        alert('Заполните сумму выплаты (payoutAmount) и учётную сумму в RUB (payoutBaseRub)');
+        return;
+      }
+      if (payoutAsset !== 'RUB' && (!exchangeRate || !rateSource)) {
+        alert('При выплате не в RUB необходимо указать курс (exchangeRate) и источник курса (rateSource)');
+        return;
+      }
+    }
+
     try {
+      const body: any = {
+        key: effectiveKey,
+        status,
+        adminNote: adminNote || null,
+        txHash: txHash || null,
+      };
+
+      // Add payout snapshot for PAID status
+      if (status === 'PAID') {
+        body.payout = {
+          asset: payoutAsset,
+          amount: payoutAmount,
+          baseRub: payoutBaseRub,
+          rate: payoutAsset !== 'RUB' ? exchangeRate : null,
+          rateSource: payoutAsset !== 'RUB' ? rateSource : null,
+          feeRub: payoutFeeRub || null,
+          notes: payoutNotes || null,
+        };
+      }
+
       const response = await fetch(`/api/admin/withdrawals/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          key: effectiveKey,
-          status,
-          adminNote: adminNote || null,
-          txHash: txHash || null,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -103,6 +165,13 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
       setEditingId(null);
       setAdminNote('');
       setTxHash('');
+      setPayoutAsset('RUB');
+      setPayoutAmount('');
+      setPayoutBaseRub('');
+      setExchangeRate('');
+      setRateSource('MANUAL');
+      setPayoutFeeRub('');
+      setPayoutNotes('');
       fetchRequests(effectiveKey);
     } catch (err) {
       console.error('Error updating status:', err);
@@ -202,6 +271,63 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
                   </div>
                 )}
 
+                {/* Payout snapshot display (for PAID requests) */}
+                {request.status === 'PAID' && request.payoutAsset && (
+                  <div className="pt-3 border-t border-[#3a3a3a] space-y-2">
+                    <p className="text-sm font-medium text-zinc-300">Параметры выплаты (snapshot)</p>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-zinc-400 text-xs">Валюта выплаты</p>
+                        <p className="text-zinc-200">{request.payoutAsset}</p>
+                      </div>
+                      <div>
+                        <p className="text-zinc-400 text-xs">Сумма выплаты</p>
+                        <p className="text-zinc-200">{formatDecimal(request.payoutAmount)} {request.payoutAsset}</p>
+                      </div>
+                      <div>
+                        <p className="text-zinc-400 text-xs">Учётная сумма (RUB)</p>
+                        <p className="text-zinc-200">{formatDecimal(request.payoutBaseRub)} ₽</p>
+                      </div>
+                      {request.exchangeRate && (
+                        <div>
+                          <p className="text-zinc-400 text-xs">Курс обмена</p>
+                          <p className="text-zinc-200">{formatDecimal(request.exchangeRate)} ₽/{request.payoutAsset}</p>
+                        </div>
+                      )}
+                      {request.rateSource && (
+                        <div>
+                          <p className="text-zinc-400 text-xs">Источник курса</p>
+                          <p className="text-zinc-200">{request.rateSource}</p>
+                        </div>
+                      )}
+                      {request.rateCapturedAt && (
+                        <div>
+                          <p className="text-zinc-400 text-xs">Курс зафиксирован</p>
+                          <p className="text-zinc-200 text-xs">{formatDateTime(request.rateCapturedAt)}</p>
+                        </div>
+                      )}
+                      {request.payoutFeeRub && (
+                        <div>
+                          <p className="text-zinc-400 text-xs">Комиссия (RUB)</p>
+                          <p className="text-zinc-200">{formatDecimal(request.payoutFeeRub)} ₽</p>
+                        </div>
+                      )}
+                      {request.paidAt && (
+                        <div>
+                          <p className="text-zinc-400 text-xs">Оплачено</p>
+                          <p className="text-zinc-200 text-xs">{formatDateTime(request.paidAt)}</p>
+                        </div>
+                      )}
+                    </div>
+                    {request.payoutNotes && (
+                      <div>
+                        <p className="text-zinc-400 text-xs">Примечания к выплате</p>
+                        <p className="text-zinc-200 text-sm">{request.payoutNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {editingId === request.id ? (
                   <div className="space-y-3 pt-3 border-t border-[#3a3a3a]">
                     <div>
@@ -232,6 +358,121 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
                         placeholder="Опционально"
                       />
                     </div>
+
+                    {/* Payout form (only for PAID status) */}
+                    {request.status === 'APPROVED' && (
+                      <div className="space-y-3 pt-3 border-t border-[#3a3a3a]">
+                        <p className="text-sm font-medium text-zinc-300">Параметры выплаты</p>
+                        
+                        <div>
+                          <label className="block text-sm text-zinc-400 mb-1">
+                            Валюта выплаты <span className="text-red-400">*</span>
+                          </label>
+                          <select
+                            value={payoutAsset}
+                            onChange={(e) => {
+                              setPayoutAsset(e.target.value as 'RUB' | 'USDT' | 'TON');
+                              if (e.target.value === 'RUB') {
+                                setExchangeRate('');
+                                setRateSource('MANUAL');
+                              }
+                            }}
+                            className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                          >
+                            <option value="RUB">RUB</option>
+                            <option value="USDT">USDT</option>
+                            <option value="TON">TON</option>
+                          </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm text-zinc-400 mb-1">
+                              Сумма выплаты <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={payoutAmount}
+                              onChange={(e) => setPayoutAmount(e.target.value)}
+                              className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm text-zinc-400 mb-1">
+                              Учётная сумма (RUB) <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={payoutBaseRub}
+                              onChange={(e) => setPayoutBaseRub(e.target.value)}
+                              className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+
+                        {payoutAsset !== 'RUB' && (
+                          <>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-sm text-zinc-400 mb-1">
+                                  Курс обмена (RUB/{payoutAsset}) <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={exchangeRate}
+                                  onChange={(e) => setExchangeRate(e.target.value)}
+                                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                                  placeholder="0.00"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm text-zinc-400 mb-1">
+                                  Источник курса <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={rateSource}
+                                  onChange={(e) => setRateSource(e.target.value)}
+                                  className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                                  placeholder="MANUAL"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm text-zinc-400 mb-1">Комиссия (RUB)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={payoutFeeRub}
+                              onChange={(e) => setPayoutFeeRub(e.target.value)}
+                              className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-zinc-400 mb-1">Примечания к выплате</label>
+                          <textarea
+                            value={payoutNotes}
+                            onChange={(e) => setPayoutNotes(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                            rows={2}
+                            placeholder="Опционально"
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex gap-2">
                       {request.status === 'PENDING' && (
                         <button
@@ -260,6 +501,13 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
                           setEditingId(null);
                           setAdminNote('');
                           setTxHash('');
+                          setPayoutAsset('RUB');
+                          setPayoutAmount('');
+                          setPayoutBaseRub('');
+                          setExchangeRate('');
+                          setRateSource('MANUAL');
+                          setPayoutFeeRub('');
+                          setPayoutNotes('');
                         }}
                         className="px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] text-white rounded hover:bg-[#333] text-sm"
                       >
@@ -269,16 +517,26 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
                   </div>
                 ) : (
                   <div className="pt-3 border-t border-[#3a3a3a]">
-                    <button
-                      onClick={() => {
-                        setEditingId(request.id);
-                        setAdminNote(request.adminNote || '');
-                        setTxHash(request.txHash || '');
-                      }}
-                      className="px-4 py-2 bg-[#4DA3FF] text-white rounded hover:bg-[#3d8fdf] text-sm"
-                    >
-                      Изменить статус
-                    </button>
+                    {request.status !== 'PAID' ? (
+                      <button
+                        onClick={() => {
+                          setEditingId(request.id);
+                          setAdminNote(request.adminNote || '');
+                          setTxHash(request.txHash || '');
+                          // Pre-fill payout with request amount if available
+                          if (request.status === 'APPROVED') {
+                            setPayoutAsset('RUB');
+                            setPayoutBaseRub(String(request.amountRub));
+                            setPayoutAmount(String(request.amountRub));
+                          }
+                        }}
+                        className="px-4 py-2 bg-[#4DA3FF] text-white rounded hover:bg-[#3d8fdf] text-sm"
+                      >
+                        Изменить статус
+                      </button>
+                    ) : (
+                      <p className="text-xs text-zinc-500">Заявка оплачена. Параметры выплаты неизменяемы.</p>
+                    )}
                   </div>
                 )}
               </div>

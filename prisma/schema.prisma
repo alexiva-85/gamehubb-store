@@ -49,6 +49,12 @@ enum WithdrawalStatus {
   REJECTED
 }
 
+enum PayoutAsset {
+  RUB
+  USDT
+  TON
+}
+
 enum DigiflazzTransactionStatus {
   CREATED
   SENT
@@ -172,6 +178,17 @@ model WithdrawalRequest {
   paidAt      DateTime?         @map("paid_at")
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  // Payout snapshot (immutable after PAID)
+  payoutAsset      PayoutAsset?  @map("payout_asset")
+  payoutAmount     Decimal?      @map("payout_amount")
+  payoutBaseRub    Decimal?      @map("payout_base_rub")
+  exchangeRate     Decimal?      @map("exchange_rate")
+  rateSource       String?       @map("rate_source")
+  rateCapturedAt   DateTime?     @map("rate_captured_at")
+  payoutFeeRub     Decimal?      @map("payout_fee_rub")
+  payoutNotes      String?       @map("payout_notes")
+  payoutSnapshot   Json?         @map("payout_snapshot")
 
   user            User            @relation("UserWithdrawals", fields: [userId], references: [id])
   referralEvents  ReferralEvent[]

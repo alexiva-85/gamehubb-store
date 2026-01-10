@@ -1,39 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { formatRubFromKopeks } from '@/lib/money';
+import { requireAdmin } from '@/lib/adminAuth';
 
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';
 
-function checkAdminKey(request: NextRequest): boolean {
-  const adminKey = process.env.ADMIN_KEY;
-  if (!adminKey) {
-    // If ADMIN_KEY not set, allow (dev mode)
-    return true;
-  }
-
-  // Check query parameter
-  const keyFromQuery = request.nextUrl.searchParams.get('key');
-  if (keyFromQuery === adminKey) {
-    return true;
-  }
-
-  // Check header
-  const keyFromHeader = request.headers.get('x-admin-key');
-  if (keyFromHeader === adminKey) {
-    return true;
-  }
-
-  return false;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    if (!checkAdminKey(request)) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const authError = requireAdmin(request);
+    if (authError) {
+      return authError;
     }
 
     const requests = await prisma.withdrawalRequest.findMany({
@@ -49,6 +26,17 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Helper to safely convert Decimal to number
+    const toNumberSafe = (v: any): number | null => {
+      if (v === null || v === undefined) return null;
+      if (typeof v === 'number') return v;
+      if (typeof v === 'bigint') return Number(v);
+      if (typeof v === 'object' && typeof (v as any).toNumber === 'function') {
+        return (v as any).toNumber();
+      }
+      return Number(v);
+    };
+
     const formattedRequests = requests.map((req) => ({
       id: req.id,
       tgUserId: req.user.tgId,
@@ -59,8 +47,19 @@ export async function GET(request: NextRequest) {
       status: req.status,
       adminNote: req.adminNote,
       txHash: req.txHash,
+      paidAt: req.paidAt?.toISOString() || null,
       createdAt: req.createdAt.toISOString(),
       updatedAt: req.updatedAt.toISOString(),
+      // Payout snapshot fields
+      payoutAsset: req.payoutAsset,
+      payoutAmount: toNumberSafe(req.payoutAmount),
+      payoutBaseRub: toNumberSafe(req.payoutBaseRub),
+      exchangeRate: toNumberSafe(req.exchangeRate),
+      rateSource: req.rateSource,
+      rateCapturedAt: req.rateCapturedAt?.toISOString() || null,
+      payoutFeeRub: toNumberSafe(req.payoutFeeRub),
+      payoutNotes: req.payoutNotes,
+      payoutSnapshot: req.payoutSnapshot,
     }));
 
     return NextResponse.json({ requests: formattedRequests });
