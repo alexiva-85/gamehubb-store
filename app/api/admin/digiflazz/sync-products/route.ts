@@ -27,8 +27,25 @@ function checkAuth(request: Request): boolean {
   return false;
 }
 
+interface DigiflazzProduct {
+  buyer_sku_code?: string | unknown;
+  sku_code?: string | unknown;
+  product_name?: string | unknown;
+  name?: string | unknown;
+  description?: string | unknown;
+  desc?: string | unknown;
+  category?: string | unknown;
+  brand?: string | unknown;
+  type?: string | unknown;
+  price?: number | unknown;
+  buyer_price?: number | unknown;
+  buyer_product_status?: unknown;
+  seller_product_status?: unknown;
+  [key: string]: unknown;
+}
+
 // Normalize boolean value from various formats
-function normalizeBoolean(value: any): boolean {
+function normalizeBoolean(value: unknown): boolean {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value !== 0;
   if (typeof value === 'string') {
@@ -49,7 +66,7 @@ function calculatePriceRub(priceIdr: number): number {
 }
 
 // Get all price list items from Digiflazz
-async function getAllDigiflazzProducts(): Promise<any[]> {
+async function getAllDigiflazzProducts(): Promise<DigiflazzProduct[]> {
   const [prepaidResult, pascaResult] = await Promise.all([
     digiflazzPriceList().catch((error) => {
       console.error('[admin/digiflazz/sync-products] prepaid price list error', error);
@@ -61,14 +78,15 @@ async function getAllDigiflazzProducts(): Promise<any[]> {
     }),
   ]);
 
-  const items: any[] = [];
+  const items: DigiflazzProduct[] = [];
 
   // Extract items from prepaid response
   if (prepaidResult?.data && Array.isArray(prepaidResult.data)) {
     items.push(...prepaidResult.data);
   } else if (prepaidResult?.data && typeof prepaidResult.data === 'object') {
     // Handle case where data might be an object with items array
-    const dataItems = (prepaidResult.data as any).items || (prepaidResult.data as any).data || [];
+    const dataObj = prepaidResult.data as Record<string, unknown>;
+    const dataItems = (Array.isArray(dataObj.items) ? dataObj.items : Array.isArray(dataObj.data) ? dataObj.data : []) as DigiflazzProduct[];
     if (Array.isArray(dataItems)) {
       items.push(...dataItems);
     }
@@ -79,7 +97,8 @@ async function getAllDigiflazzProducts(): Promise<any[]> {
     items.push(...pascaResult.data);
   } else if (pascaResult?.data && typeof pascaResult.data === 'object') {
     // Handle case where data might be an object with items array
-    const dataItems = (pascaResult.data as any).items || (pascaResult.data as any).data || [];
+    const dataObj = pascaResult.data as Record<string, unknown>;
+    const dataItems = (Array.isArray(dataObj.items) ? dataObj.items : Array.isArray(dataObj.data) ? dataObj.data : []) as DigiflazzProduct[];
     if (Array.isArray(dataItems)) {
       items.push(...dataItems);
     }
@@ -89,7 +108,7 @@ async function getAllDigiflazzProducts(): Promise<any[]> {
 }
 
 // Map Digiflazz product to Product model
-function mapDigiflazzToProduct(item: any): {
+function mapDigiflazzToProduct(item: DigiflazzProduct): {
   sku: string;
   title: string;
   description: string | null;
@@ -100,18 +119,26 @@ function mapDigiflazzToProduct(item: any): {
   basePriceIdr: number;
   priceRub: number | null; // null means "don't update" (for MANUAL mode)
 } {
-  const sku = item.buyer_sku_code || item.sku_code || '';
-  const title = item.product_name || item.name || item.buyer_sku_code || 'Unknown Product';
+  const skuRaw = item.buyer_sku_code || item.sku_code || '';
+  if (!skuRaw || typeof skuRaw !== 'string') {
+    throw new Error('Missing or invalid buyer_sku_code in Digiflazz product');
+  }
+  const sku: string = skuRaw;
+  
+  const titleRaw = item.product_name || item.name || item.buyer_sku_code || 'Unknown Product';
+  const title: string = typeof titleRaw === 'string' ? titleRaw : 'Unknown Product';
   
   // Build description from available fields
   const descParts: string[] = [];
-  if (item.desc) descParts.push(item.desc);
-  if (item.brand) descParts.push(`Brand: ${item.brand}`);
-  if (item.type) descParts.push(`Type: ${item.type}`);
+  if (item.description && typeof item.description === 'string') descParts.push(item.description);
+  if (item.desc && typeof item.desc === 'string') descParts.push(item.desc);
+  if (item.brand && typeof item.brand === 'string') descParts.push(`Brand: ${item.brand}`);
+  if (item.type && typeof item.type === 'string') descParts.push(`Type: ${item.type}`);
   const description = descParts.length > 0 ? descParts.join('. ') : null;
 
   // Category: use category, or brand, or null
-  const category = item.category || item.brand || null;
+  const categoryRaw = item.category || item.brand;
+  const category = (categoryRaw && typeof categoryRaw === 'string') ? categoryRaw : null;
 
   // Determine isActive
   let isActive = true;
@@ -199,7 +226,17 @@ export async function POST(request: Request) {
       const shouldUpdatePrice = !existingProduct || existingProduct.priceMode === PriceMode.AUTO || existingProduct.priceMode === null;
       
       // Build update data
-      const updateData: any = {
+      const updateData: {
+        title: string;
+        description: string | null;
+        category: string | null;
+        provider: Provider;
+        isActive: boolean;
+        basePriceIdr: number | null;
+        updatedAt: Date;
+        priceRub?: number;
+        priceMode?: PriceMode;
+      } = {
         title: productData.title,
         description: productData.description,
         category: productData.category,
@@ -210,7 +247,7 @@ export async function POST(request: Request) {
       };
 
       // Update priceRub only for AUTO mode (or null for old records)
-      if (shouldUpdatePrice) {
+      if (shouldUpdatePrice && productData.priceRub !== null) {
         updateData.priceRub = productData.priceRub;
         if (existingProduct) {
           autoRepriced++;
@@ -221,7 +258,18 @@ export async function POST(request: Request) {
       }
 
       // Create data (always use calculated price for new products)
-      const createData: any = {
+      const createData: {
+        sku: string;
+        title: string;
+        description: string | null;
+        category: string | null;
+        provider: Provider;
+        isActive: boolean;
+        imageUrl: string | null;
+        basePriceIdr: number | null;
+        priceRub: number;
+        priceMode: PriceMode;
+      } = {
         sku: productData.sku,
         title: productData.title,
         description: productData.description,
@@ -230,7 +278,7 @@ export async function POST(request: Request) {
         isActive: productData.isActive,
         imageUrl: productData.imageUrl,
         basePriceIdr: productData.basePriceIdr,
-        priceRub: productData.priceRub,
+        priceRub: productData.priceRub ?? calculatePriceRub(productData.basePriceIdr ?? 0),
         priceMode: PriceMode.AUTO, // New products default to AUTO
       };
 

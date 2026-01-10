@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { formatRubFromKopeks } from '@/lib/money';
-import { Prisma } from '@prisma/client';
+import { Prisma, WithdrawalStatus, PayoutAsset } from '@prisma/client';
 import { requireAdmin } from '@/lib/adminAuth';
+import { toNumberSafe } from '@/lib/utils';
 
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';
@@ -147,7 +147,21 @@ export async function PATCH(
 
     // Update in transaction
     const withdrawalRequest = await prisma.$transaction(async (tx) => {
-      const updateData: any = {
+      const updateData: {
+        status: WithdrawalStatus;
+        adminNote?: string | null;
+        txHash?: string | null;
+        paidAt?: Date;
+        payoutAsset?: PayoutAsset;
+        payoutAmount?: Prisma.Decimal;
+        payoutBaseRub?: Prisma.Decimal;
+        exchangeRate?: Prisma.Decimal | null;
+        rateSource?: string | null;
+        rateCapturedAt?: Date | null;
+        payoutFeeRub?: Prisma.Decimal | null;
+        payoutNotes?: string | null;
+        payoutSnapshot?: Prisma.InputJsonValue;
+      } = {
         status,
       };
 
@@ -221,16 +235,6 @@ export async function PATCH(
 
       // If REJECTED or CANCELED, release reservation
       if (status === 'REJECTED') {
-        // Get events that were AVAILABLE before reservation
-        const eventsToRelease = await tx.referralEvent.findMany({
-          where: {
-            withdrawalRequestId: id,
-            status: {
-              in: ['AVAILABLE', 'LOCKED'],
-            },
-          },
-        });
-
         // Release reservation and restore status if needed
         await tx.referralEvent.updateMany({
           where: {
@@ -247,16 +251,6 @@ export async function PATCH(
       return updated;
     });
 
-    // Serialize response (handle Decimal types)
-    const toNumberSafe = (v: any): number | null => {
-      if (v === null || v === undefined) return null;
-      if (typeof v === 'number') return v;
-      if (typeof v === 'bigint') return Number(v);
-      if (typeof v === 'object' && typeof (v as any).toNumber === 'function') {
-        return (v as any).toNumber();
-      }
-      return Number(v);
-    };
 
     return NextResponse.json({
       id: withdrawalRequest.id,

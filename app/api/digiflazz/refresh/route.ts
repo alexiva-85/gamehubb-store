@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma, DigiflazzTransactionStatus, OrderStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { digiflazzStatus } from '@/lib/digiflazz';
 import { normalizeDigiflazzStatusResponse } from '@/lib/digiflazz-helpers';
@@ -17,42 +18,54 @@ function checkInternalToken(request: NextRequest): boolean {
   return headerToken === token;
 }
 
+interface DigiflazzStatusResponse {
+  data?: {
+    status?: string;
+    rc?: string | number;
+    price?: number;
+    amount?: number;
+  };
+  rc?: string | number;
+  price?: number;
+  amount?: number;
+}
+
 // Determine status from Digiflazz response (same logic as topup)
-function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
+function determineStatus(response: DigiflazzStatusResponse): DigiflazzTransactionStatus {
   // Priority 1: Check data.status field (most reliable indicator from Digiflazz)
   if (response?.data?.status) {
     const status = String(response.data.status).trim();
     const statusLower = status.toLowerCase();
     
     if (statusLower === 'pending') {
-      return 'PENDING';
+      return DigiflazzTransactionStatus.PENDING;
     }
     if (statusLower === 'sukses' || statusLower === 'success') {
-      return 'SUCCESS';
+      return DigiflazzTransactionStatus.SUCCESS;
     }
     if (statusLower === 'gagal' || statusLower === 'failed') {
-      return 'FAILED';
+      return DigiflazzTransactionStatus.FAILED;
     }
   }
 
   // Fallback: Check data.rc field (if data.status is not present)
   if (response?.data?.rc !== undefined) {
     if (response.data.rc === '0' || response.data.rc === 0) {
-      return 'SUCCESS';
+      return DigiflazzTransactionStatus.SUCCESS;
     }
-    return 'FAILED';
+    return DigiflazzTransactionStatus.FAILED;
   }
 
   // Fallback: Check top-level rc field
   if (response?.rc !== undefined) {
     if (response.rc === '0' || response.rc === 0) {
-      return 'SUCCESS';
+      return DigiflazzTransactionStatus.SUCCESS;
     }
-    return 'FAILED';
+    return DigiflazzTransactionStatus.FAILED;
   }
 
   // Default: FAILED
-  return 'FAILED';
+  return DigiflazzTransactionStatus.FAILED;
 }
 
 export async function POST(request: NextRequest) {
@@ -108,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already final status (SUCCESS or FAILED)
-    if ((tx.status === 'SUCCESS' || tx.status === 'FAILED') && !force) {
+    if ((tx.status === DigiflazzTransactionStatus.SUCCESS || tx.status === DigiflazzTransactionStatus.FAILED) && !force) {
       // Normalize cached response too
       const cachedResponse = tx.digiflazzResponse 
         ? normalizeDigiflazzStatusResponse(tx.digiflazzResponse, tx.buyerSkuCode, tx.customerNo)
@@ -152,9 +165,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Digiflazz status API
-    let digiflazzResponse: any;
+    let digiflazzResponse: DigiflazzStatusResponse;
     try {
-      digiflazzResponse = await digiflazzStatus(refId);
+      const response = await digiflazzStatus(refId);
+      // Cast to DigiflazzStatusResponse for type safety
+      digiflazzResponse = response as unknown as DigiflazzStatusResponse;
     } catch (error) {
       console.error('[digiflazz/refresh] Digiflazz status error', {
         ref_id: refId,
@@ -176,9 +191,14 @@ export async function POST(request: NextRequest) {
     // Update transaction
     // IMPORTANT: Never update buyer_sku_code and customer_no from status response
     // These fields should remain as originally set from topup/order
-    const updateData: any = {
-      status: newStatus,
-      digiflazzResponse, // Save full response as-is
+    const updateData: {
+      status: DigiflazzTransactionStatus;
+      digiflazzResponse: Prisma.InputJsonValue;
+      updatedAt: Date;
+      amount?: number | null;
+    } = {
+      status: newStatus as DigiflazzTransactionStatus,
+      digiflazzResponse: digiflazzResponse as Prisma.InputJsonValue, // Save full response as-is
       updatedAt: new Date(),
     };
 
@@ -198,8 +218,11 @@ export async function POST(request: NextRequest) {
     });
 
     // If status became SUCCESS and order exists, update order
-    if (newStatus === 'SUCCESS' && tx.orderId && tx.order) {
-      const orderUpdateData: any = {};
+    if (newStatus === DigiflazzTransactionStatus.SUCCESS && tx.orderId && tx.order) {
+      const orderUpdateData: {
+        fulfilledAt?: Date;
+        status?: OrderStatus;
+      } = {};
       
       if (!tx.order.fulfilledAt) {
         orderUpdateData.fulfilledAt = new Date();
@@ -212,7 +235,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (currentOrder && currentOrder.status !== 'FULFILLED') {
-        orderUpdateData.status = 'FULFILLED';
+        orderUpdateData.status = OrderStatus.FULFILLED;
       }
 
       if (Object.keys(orderUpdateData).length > 0) {
@@ -225,7 +248,7 @@ export async function POST(request: NextRequest) {
 
     // Normalize response for user (fill empty customer_no/buyer_sku_code from tx)
     const normalizedResponse = normalizeDigiflazzStatusResponse(
-      digiflazzResponse,
+      digiflazzResponse as unknown,
       tx.buyerSkuCode,
       tx.customerNo
     );

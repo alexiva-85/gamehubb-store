@@ -29,7 +29,7 @@ export default async function GameCatalogPage({ params }: PageProps) {
         </Link>
         <h1 className="text-3xl font-bold mt-2">{game.name}</h1>
       </div>
-      <GameCatalogClient initialProducts={products} gameName={game.name} />
+      <GameCatalogClient initialProducts={products} />
     </div>
   );
 }

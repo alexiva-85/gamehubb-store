@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { digiflazzTopup } from '@/lib/digiflazz';
 import { generateDigiflazzRefId } from '@/lib/digiflazz-ref';
@@ -11,8 +12,20 @@ function isTopupEnabled(): boolean {
   return process.env.DIGIFLAZZ_TOPUP_ENABLED === 'true';
 }
 
+interface DigiflazzTopupResponse {
+  data?: {
+    status?: string;
+    rc?: string | number;
+    price?: number;
+    amount?: number;
+  };
+  rc?: string | number;
+  price?: number;
+  amount?: number;
+}
+
 // Determine status from Digiflazz response (same logic as /api/digiflazz/topup)
-function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
+function determineStatus(response: DigiflazzTopupResponse): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
   // Priority 1: Check data.status field (most reliable indicator from Digiflazz)
   if (response?.data?.status) {
     const status = String(response.data.status).trim();
@@ -118,13 +131,14 @@ export async function POST(
     }
 
     // Call Digiflazz API
-    let digiflazzResponse: any;
+    let digiflazzResponse: DigiflazzTopupResponse;
     try {
-      digiflazzResponse = await digiflazzTopup({
+      const response = await digiflazzTopup({
         refId,
         buyerSkuCode: order.productSku,
         customerNo: order.customerNo,
       });
+      digiflazzResponse = response as unknown as DigiflazzTopupResponse;
     } catch (error) {
       // Create failed transaction record
       await prisma.digiflazzTransaction.create({
@@ -154,7 +168,7 @@ export async function POST(
         buyerSkuCode: order.productSku,
         customerNo: order.customerNo,
         status: newStatus,
-        digiflazzResponse,
+        digiflazzResponse: digiflazzResponse as Prisma.InputJsonValue,
         amount: digiflazzResponse.price || digiflazzResponse.amount || null,
       },
     });

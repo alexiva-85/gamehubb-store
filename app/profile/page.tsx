@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Card from '@/app/components/Card';
 import { formatRubFromKopeks, MIN_WITHDRAW_RUB, rubToKopeks } from '@/lib/money';
+import WithdrawalDetailsDialog from './WithdrawalDetailsDialog';
 
 interface ReferralSummary {
   referralCode: string;
@@ -17,6 +18,38 @@ interface ReferralSummary {
   note: string;
 }
 
+interface WithdrawalListItem {
+  id: string;
+  amountRub: number;
+  asset: string;
+  status: string;
+  createdAt: string;
+  paidAt?: string | null;
+  adminNote?: string | null;
+  txHash?: string | null;
+}
+
+interface TelegramWebApp {
+  initData?: string;
+  initDataUnsafe?: {
+    start_param?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface TelegramWindow extends Window {
+  Telegram?: {
+    WebApp?: TelegramWebApp;
+  };
+}
+
+function getTelegramWebApp(): TelegramWebApp | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const win = window as unknown as TelegramWindow;
+  return win.Telegram?.WebApp;
+}
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [referralLink, setReferralLink] = useState<string | null>(null);
@@ -26,15 +59,17 @@ export default function ProfilePage() {
   const [referralSummary, setReferralSummary] = useState<ReferralSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<{ status: number | null; message: string } | null>(null);
-  const [withdrawalRequest, setWithdrawalRequest] = useState<any>(null);
+  const [withdrawalRequest, setWithdrawalRequest] = useState<WithdrawalListItem | null>(null);
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
-  const [withdrawalHistory, setWithdrawalHistory] = useState<any[]>([]);
+  const [withdrawalHistory, setWithdrawalHistory] = useState<WithdrawalListItem[]>([]);
   const [showWithdrawalForm, setShowWithdrawalForm] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
   // Always use USDT_TON, no choice needed
-  const withdrawalAsset: 'USDT_TON' = 'USDT_TON';
+  const withdrawalAsset = 'USDT_TON' as const;
   const [withdrawalAddress, setWithdrawalAddress] = useState('');
   const [withdrawalSubmitting, setWithdrawalSubmitting] = useState(false);
+  const [selectedWithdrawalId, setSelectedWithdrawalId] = useState<string | null>(null);
+  const [initData, setInitData] = useState<string>('');
 
   // Check feature flag (client-side)
   const isReferralProgramEnabled = typeof window !== 'undefined' 
@@ -46,7 +81,7 @@ export default function ProfilePage() {
 
   // Detect Telegram mode vs Web mode
   const isTelegramMode = typeof window !== 'undefined' && 
-    !!(window as any).Telegram?.WebApp?.initData;
+    !!getTelegramWebApp()?.initData;
 
   useEffect(() => {
     // Check if Web Share API is available
@@ -62,14 +97,17 @@ export default function ProfilePage() {
       }
 
       try {
-        const tg = (window as any).Telegram?.WebApp;
-        const initData = tg?.initData ?? '';
+        const tg = getTelegramWebApp();
+        const currentInitData = tg?.initData ?? '';
         const startParamFromInit = tg?.initDataUnsafe?.start_param;
         const startParamFromUrl = new URLSearchParams(window.location.search).get('tgWebAppStartParam');
         const startParam = startParamFromInit || startParamFromUrl || '';
 
+        // Store initData for withdrawal details
+        setInitData(currentInitData);
+
         // If no initData, don't call API, show placeholder
-        if (!initData) {
+        if (!currentInitData) {
           setLoading(false);
           setReferralLink(null);
           return;
@@ -80,7 +118,7 @@ export default function ProfilePage() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ initData, startParam }),
+          body: JSON.stringify({ initData: currentInitData, startParam }),
         });
 
         if (response.ok) {
@@ -146,7 +184,7 @@ export default function ProfilePage() {
   const fetchReferralSummary = async () => {
     if (typeof window === 'undefined') return;
 
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = getTelegramWebApp();
     const initData = tg?.initData ?? '';
 
     // If no initData, don't make request at all
@@ -223,10 +261,13 @@ export default function ProfilePage() {
   const fetchWithdrawalRequest = async () => {
     if (typeof window === 'undefined') return;
 
-    const tg = (window as any).Telegram?.WebApp;
-    const initData = tg?.initData ?? '';
+    const tg = getTelegramWebApp();
+    const currentInitData = tg?.initData ?? '';
 
-    if (!initData) return;
+    if (!currentInitData) return;
+
+    // Store initData for withdrawal details
+    setInitData(currentInitData);
 
     try {
       setWithdrawalLoading(true);
@@ -235,12 +276,12 @@ export default function ProfilePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ initData }),
+        body: JSON.stringify({ initData: currentInitData }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setWithdrawalRequest(data.request);
+        const data = await response.json() as { request?: WithdrawalListItem; history?: WithdrawalListItem[] };
+        if (data.request) setWithdrawalRequest(data.request);
         setWithdrawalHistory(data.history || []);
       }
     } catch (err) {
@@ -255,7 +296,7 @@ export default function ProfilePage() {
 
     if (typeof window === 'undefined') return;
 
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = getTelegramWebApp();
     const initData = tg?.initData ?? '';
 
     if (!initData) return;
@@ -287,7 +328,7 @@ export default function ProfilePage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as WithdrawalListItem;
         setWithdrawalRequest(data);
         setShowWithdrawalForm(false);
         setWithdrawalAmount('');
@@ -296,7 +337,7 @@ export default function ProfilePage() {
         // Refresh history after creating new request
         fetchWithdrawalRequest();
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json() as { error?: string };
         alert(errorData.error || 'Ошибка создания заявки');
       }
     } catch (err) {
@@ -310,7 +351,7 @@ export default function ProfilePage() {
   // Debug info
   const getDebugInfo = () => {
     if (typeof window === 'undefined') return null;
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = getTelegramWebApp();
     const initData = tg?.initData ?? '';
     const startParamFromInit = tg?.initDataUnsafe?.start_param;
     const startParamFromUrl = new URLSearchParams(window.location.search).get('tgWebAppStartParam');
@@ -518,9 +559,10 @@ export default function ProfilePage() {
                   ) : (
                     <div className="space-y-3">
                       {withdrawalHistory.map((request) => (
-                        <div
+                        <button
                           key={request.id}
-                          className="bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-3 space-y-2"
+                          onClick={() => setSelectedWithdrawalId(request.id)}
+                          className="w-full text-left bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg p-3 space-y-2 hover:bg-[#222] transition-colors"
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
@@ -561,11 +603,20 @@ export default function ProfilePage() {
                               <p className="text-xs text-zinc-200 font-mono break-all mt-1">{request.txHash}</p>
                             </div>
                           )}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* Withdrawal Details Dialog */}
+              {isTelegramMode && isReferralProgramEnabled && (
+                <WithdrawalDetailsDialog
+                  withdrawalId={selectedWithdrawalId}
+                  onClose={() => setSelectedWithdrawalId(null)}
+                  initData={initData}
+                />
               )}
 
               {isDebug && (() => {

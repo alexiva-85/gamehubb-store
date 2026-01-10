@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface Product {
   id: string;
   sku: string;
@@ -39,11 +41,13 @@ export default function CatalogProducts({ products }: CatalogProductsProps) {
           className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col"
         >
           {product.imageUrl && (
-            <div className="w-full h-48 bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden">
-              <img
+            <div className="w-full h-48 bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden relative">
+              <Image
                 src={product.imageUrl}
                 alt={product.title}
-                className="max-w-full max-h-full object-contain"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </div>
           )}

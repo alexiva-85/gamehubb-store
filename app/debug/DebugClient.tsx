@@ -19,46 +19,79 @@ interface TelegramDiagnostics {
   currentUrl: string;
 }
 
+// Type guard for Telegram WebApp
+interface TelegramWebApp {
+  initData?: string;
+  initDataUnsafe?: Record<string, unknown> | null;
+  platform?: string;
+  version?: string;
+}
+
+interface TelegramWindow extends Window {
+  Telegram?: {
+    WebApp?: TelegramWebApp;
+  };
+}
+
+function computeTelegramDiagnostics(): TelegramDiagnostics {
+  if (typeof window === 'undefined') {
+    return {
+      hasTelegramObject: false,
+      hasWebAppObject: false,
+      initDataLength: 0,
+      initDataPreview: '',
+      platform: null,
+      version: null,
+      currentUrl: '',
+    };
+  }
+
+  const win = window as unknown as TelegramWindow;
+  const tg = win.Telegram?.WebApp;
+  const initData = tg?.initData ?? '';
+
+  return {
+    hasTelegramObject: typeof win.Telegram !== 'undefined',
+    hasWebAppObject: typeof tg !== 'undefined',
+    initDataLength: initData.length,
+    initDataPreview: initData.length > 0 
+      ? initData.slice(0, 20) + (initData.length > 20 ? '...' : '')
+      : '',
+    platform: tg?.platform ?? null,
+    version: tg?.version ?? null,
+    currentUrl: window.location.href,
+  };
+}
+
 export default function DebugClient() {
   const [buildInfo, setBuildInfo] = useState<BuildInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tgDiagnostics, setTgDiagnostics] = useState<TelegramDiagnostics | null>(null);
+
+  // Compute diagnostics without state (computed on each render, safe for client-only)
+  const tgDiagnostics = typeof window !== 'undefined' ? computeTelegramDiagnostics() : {
+    hasTelegramObject: false,
+    hasWebAppObject: false,
+    initDataLength: 0,
+    initDataPreview: '',
+    platform: null,
+    version: null,
+    currentUrl: '',
+  };
 
   useEffect(() => {
     fetch('/api/build-info')
       .then((res) => res.json())
-      .then((data) => {
-        setBuildInfo(data);
+      .then((data: unknown) => {
+        if (typeof data === 'object' && data !== null) {
+          setBuildInfo(data as BuildInfo);
+        }
         setLoading(false);
       })
-      .catch((err) => {
-        setError(err.message);
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Unknown error');
         setLoading(false);
       });
-  }, []);
-
-  useEffect(() => {
-    // Read Telegram data on client only
-    if (typeof window === 'undefined') return;
-
-    const tg = (window as any).Telegram?.WebApp;
-    const initData = tg?.initData ?? '';
-    const initDataUnsafe = tg?.initDataUnsafe ?? null;
-
-    const diagnostics: TelegramDiagnostics = {
-      hasTelegramObject: typeof (window as any).Telegram !== 'undefined',
-      hasWebAppObject: typeof tg !== 'undefined',
-      initDataLength: initData.length,
-      initDataPreview: initData.length > 0 
-        ? initData.slice(0, 20) + (initData.length > 20 ? '...' : '')
-        : '',
-      platform: tg?.platform ?? null,
-      version: tg?.version ?? null,
-      currentUrl: window.location.href,
-    };
-
-    setTgDiagnostics(diagnostics);
   }, []);
 
   const userAgent = typeof window !== 'undefined' ? navigator.userAgent : 'N/A';

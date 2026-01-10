@@ -27,10 +27,20 @@ function generateSignature(refId: string): string {
   return crypto.createHash('md5').update(data).digest('hex');
 }
 
+interface DigiflazzResponse {
+  rc?: string | number;
+  data?: unknown;
+  [key: string]: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /**
  * Make a request to Digiflazz API through Fixie proxy
  */
-async function digiflazzRequest(path: string, body: any): Promise<any> {
+async function digiflazzRequest(path: string, body: Record<string, unknown>): Promise<DigiflazzResponse> {
   if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
     throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
   }
@@ -48,14 +58,18 @@ async function digiflazzRequest(path: string, body: any): Promise<any> {
       dispatcher: proxyAgent,
     });
 
-    const data = await response.body.json() as any;
+    const data = await response.body.json() as unknown;
+    if (!isRecord(data)) {
+      throw new Error('Invalid response format');
+    }
+    const responseData = data as DigiflazzResponse;
 
     // Check for IP whitelist error (rc: 45)
-    if (data.rc === '45' || (typeof data.data === 'string' && data.data.toLowerCase().includes('ip'))) {
+    if (responseData.rc === '45' || (typeof responseData.data === 'string' && responseData.data.toLowerCase().includes('ip'))) {
       console.warn('[digiflazz] rc45 ip not whitelisted');
     }
 
-    return data;
+    return responseData;
   } catch (error) {
     console.error('[digiflazz] request failed', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -69,7 +83,7 @@ async function digiflazzRequest(path: string, body: any): Promise<any> {
  * Get Digiflazz price list
  * Signature for /v1/daftar-harga: md5(username + apiKey + "pricelist")
  */
-export async function digiflazzPriceList(): Promise<any> {
+export async function digiflazzPriceList(): Promise<DigiflazzResponse> {
   if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
     throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
   }
@@ -89,7 +103,7 @@ export async function digiflazzPriceList(): Promise<any> {
  * Get Digiflazz price list for pasca (postpaid)
  * Signature for /v1/daftar-harga: md5(username + apiKey + "pricelist")
  */
-export async function digiflazzPriceListPasca(): Promise<any> {
+export async function digiflazzPriceListPasca(): Promise<DigiflazzResponse> {
   if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
     throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
   }
@@ -109,7 +123,7 @@ export async function digiflazzPriceListPasca(): Promise<any> {
  * Get Digiflazz balance
  * Signature for /v1/cek-saldo: md5(username + apiKey + "depo")
  */
-export async function digiflazzBalance(): Promise<any> {
+export async function digiflazzBalance(): Promise<DigiflazzResponse> {
   if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
     throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
   }
@@ -134,7 +148,7 @@ export async function digiflazzTopup(params: {
   refId: string;
   buyerSkuCode: string;
   customerNo: string;
-}): Promise<any> {
+}): Promise<DigiflazzResponse> {
   if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
     throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
   }
@@ -159,8 +173,8 @@ export async function digiflazzTransaction(payload: {
   sku_code: string;
   customer_no: string;
   ref_id: string;
-  [key: string]: any;
-}): Promise<any> {
+  [key: string]: unknown;
+}): Promise<DigiflazzResponse> {
   return digiflazzTopup({
     refId: payload.ref_id,
     buyerSkuCode: payload.sku_code,
@@ -173,7 +187,7 @@ export async function digiflazzTransaction(payload: {
  * Signature: md5(username + apiKey + refId)
  * Endpoint: POST /v1/transaction with cmd: "status"
  */
-export async function digiflazzStatus(refId: string): Promise<any> {
+export async function digiflazzStatus(refId: string): Promise<DigiflazzResponse> {
   if (!DIGIFLAZZ_USERNAME || !DIGIFLAZZ_API_KEY) {
     throw new Error('DIGIFLAZZ_USERNAME and DIGIFLAZZ_API_KEY must be set');
   }
@@ -193,7 +207,7 @@ export async function digiflazzStatus(refId: string): Promise<any> {
  * Get Digiflazz transaction status (legacy alias)
  * @deprecated Use digiflazzStatus() instead
  */
-export async function digiflazzTransactionStatus(refId: string): Promise<any> {
+export async function digiflazzTransactionStatus(refId: string): Promise<DigiflazzResponse> {
   return digiflazzStatus(refId);
 }
 

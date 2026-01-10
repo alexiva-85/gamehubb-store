@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { formatRubFromKopeks } from '@/lib/money';
 import { requireAdmin } from '@/lib/adminAuth';
+import { toNumberSafe } from '@/lib/utils';
 
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';
@@ -26,16 +26,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Helper to safely convert Decimal to number
-    const toNumberSafe = (v: any): number | null => {
-      if (v === null || v === undefined) return null;
-      if (typeof v === 'number') return v;
-      if (typeof v === 'bigint') return Number(v);
-      if (typeof v === 'object' && typeof (v as any).toNumber === 'function') {
-        return (v as any).toNumber();
-      }
-      return Number(v);
-    };
 
     const formattedRequests = requests.map((req) => ({
       id: req.id,

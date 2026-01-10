@@ -27,7 +27,10 @@ export async function updateProductPrice(
       }
     }
 
-    const updateData: any = {
+    const updateData: {
+      priceMode: PriceMode;
+      priceRub?: number;
+    } = {
       priceMode,
     };
 
@@ -69,7 +72,10 @@ export async function bulkUpdateProductPrices(
       }
     }
 
-    const updateData: any = {
+    const updateData: {
+      priceMode: PriceMode;
+      priceRub?: number;
+    } = {
       priceMode,
     };
 

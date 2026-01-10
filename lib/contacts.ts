@@ -40,6 +40,22 @@ export function getTelegramLink(username: string): string {
   return `https://t.me/${cleanUsername}`;
 }
 
+interface TelegramWebApp {
+  openTelegramLink?: (url: string) => void;
+}
+
+interface TelegramWindow {
+  Telegram?: {
+    WebApp?: TelegramWebApp;
+  };
+}
+
+function getTelegramWebApp(): TelegramWebApp | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const win = window as unknown as Window & TelegramWindow;
+  return win.Telegram?.WebApp;
+}
+
 /**
  * Open Telegram link (supports Telegram WebView)
  */
@@ -48,7 +64,7 @@ export function openTelegramLink(username: string): void {
   
   // Check if we're in Telegram WebView
   if (typeof window !== 'undefined') {
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = getTelegramWebApp();
     if (tg?.openTelegramLink) {
       tg.openTelegramLink(url);
       return;
@@ -58,4 +74,3 @@ export function openTelegramLink(username: string): void {
   // Fallback to regular window.open
   window.open(url, '_blank', 'noopener,noreferrer');
 }
-

@@ -49,7 +49,13 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * pageSize;
 
     // Build where clause
-    const where: any = {
+    const where: {
+      provider: Provider;
+      OR?: Array<{ sku: { contains: string; mode: 'insensitive' } } | { title: { contains: string; mode: 'insensitive' } }>;
+      category?: string;
+      isActive?: boolean;
+      priceMode?: PriceMode;
+    } = {
       provider: providerParam as Provider,
     };
 
@@ -80,7 +86,7 @@ export async function GET(request: NextRequest) {
 
     // Sort
     const [sortField, sortOrder] = sortParam.split('_');
-    const orderBy: any = {};
+    const orderBy: Record<string, 'asc' | 'desc'> = {};
     if (sortField && sortOrder) {
       orderBy[sortField] = sortOrder === 'desc' ? 'desc' : 'asc';
     } else {
@@ -173,7 +179,10 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      const updateData: any = {
+      const updateData: {
+        priceMode: PriceMode;
+        priceRub?: number;
+      } = {
         priceMode: priceMode as PriceMode,
       };
 
@@ -197,7 +206,10 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      const updateData: any = {
+      const updateData: {
+        priceMode: PriceMode;
+        priceRub?: number;
+      } = {
         priceMode: priceMode as PriceMode,
       };
 

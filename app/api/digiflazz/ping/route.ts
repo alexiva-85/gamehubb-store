@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { digiflazzBalance } from '@/lib/digiflazz';
 
 // Use Node.js runtime for undici
 export const runtime = 'nodejs';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const result = await digiflazzBalance();
 

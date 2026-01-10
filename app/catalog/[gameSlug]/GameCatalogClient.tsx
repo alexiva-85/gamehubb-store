@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useCart } from '@/app/providers/CartProvider';
 import type { ProductWithGame } from '@/lib/products';
 
 interface GameCatalogClientProps {
   initialProducts: ProductWithGame[];
-  gameName: string;
 }
 
 const CATEGORIES = ['Все', 'Top-up', 'Currency', 'Pass'] as const;
@@ -14,7 +14,6 @@ type Category = (typeof CATEGORIES)[number];
 
 export default function GameCatalogClient({
   initialProducts,
-  gameName,
 }: GameCatalogClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category>('Все');
@@ -86,11 +85,13 @@ export default function GameCatalogClient({
               className="border border-[#3a3a3a] rounded-lg p-4 bg-[#2a2a2a] hover:border-[#4DA3FF] hover:bg-[#2f2f2f] transition-all"
             >
               {product.imageUrl && (
-                <div className="w-full h-32 mb-3 bg-[#1a1a1a] rounded overflow-hidden">
-                  <img
+                <div className="w-full h-32 mb-3 bg-[#1a1a1a] rounded overflow-hidden relative">
+                  <Image
                     src={product.imageUrl}
                     alt={product.title}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   />
                 </div>
               )}

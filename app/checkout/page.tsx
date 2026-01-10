@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCart } from '@/app/providers/CartProvider';
 
 export default function CheckoutPage() {
-  const { cart, total, clearCart } = useCart();
+  const { cart, total } = useCart();
   const [playerId, setPlayerId] = useState('');
   const [server, setServer] = useState('');
   const [nickname, setNickname] = useState('');

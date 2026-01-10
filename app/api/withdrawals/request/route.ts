@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateTelegramInitData, parseTelegramUser } from '@/lib/telegram';
 import { sendWithdrawalRequestEmail } from '@/lib/email';
-import { formatRubFromKopeks, MIN_WITHDRAW_RUB, MIN_WITHDRAW_KOPEKS, rubToKopeks } from '@/lib/money';
+import { formatRubFromKopeks, MIN_WITHDRAW_RUB, rubToKopeks } from '@/lib/money';
 
 // Use Node.js runtime to avoid edge runtime issues with Prisma
 export const runtime = 'nodejs';

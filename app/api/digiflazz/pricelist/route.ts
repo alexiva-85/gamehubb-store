@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { digiflazzPriceList } from '@/lib/digiflazz';
 
 // Use Node.js runtime for undici
 export const runtime = 'nodejs';
 
 // Simple in-memory cache (60 seconds TTL)
-let cachedPriceList: any = null;
+let cachedPriceList: Record<string, unknown> | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check cache
     const now = Date.now();

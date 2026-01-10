@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import CartIcon from './CartIcon';
 
 export default function Header() {
@@ -8,11 +9,13 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* LEFT: Brand */}
           <Link href="/" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
-            <div className="h-10 w-10 sm:h-11 sm:w-11 overflow-hidden rounded-[12px] border border-white/[0.08] bg-black/20 flex items-center justify-center flex-shrink-0 p-1">
-              <img
+            <div className="h-10 w-10 sm:h-11 sm:w-11 overflow-hidden rounded-[12px] border border-white/[0.08] bg-black/20 flex items-center justify-center flex-shrink-0 p-1 relative">
+              <Image
                 src="/brand/logo-mark-nobg.png"
                 alt="GameHubb"
-                className="w-full h-full object-contain block"
+                fill
+                className="object-contain"
+                sizes="44px"
               />
             </div>
             <span className="text-sm sm:text-base md:text-xl font-semibold tracking-tight text-white truncate hidden sm:block">

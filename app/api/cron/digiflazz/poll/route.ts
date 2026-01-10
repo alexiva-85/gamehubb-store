@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma, DigiflazzTransactionStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { digiflazzStatus } from '@/lib/digiflazz';
 
@@ -39,46 +40,67 @@ function checkCronSecret(request: Request): boolean {
   return false;
 }
 
+interface DigiflazzStatusResponse {
+  data?: {
+    status?: string;
+    rc?: string | number;
+    price?: number;
+    amount?: number;
+  };
+  rc?: string | number;
+  price?: number;
+  amount?: number;
+}
+
 // Determine status from Digiflazz response
-function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
+function determineStatus(response: DigiflazzStatusResponse): DigiflazzTransactionStatus {
   // Priority 1: Check data.status field
   if (response?.data?.status) {
     const status = String(response.data.status).trim();
     const statusLower = status.toLowerCase();
     
     if (statusLower === 'pending') {
-      return 'PENDING';
+      return DigiflazzTransactionStatus.PENDING;
     }
     if (statusLower === 'sukses' || statusLower === 'success') {
-      return 'SUCCESS';
+      return DigiflazzTransactionStatus.SUCCESS;
     }
     if (statusLower === 'gagal' || statusLower === 'failed') {
-      return 'FAILED';
+      return DigiflazzTransactionStatus.FAILED;
     }
   }
 
   // Fallback: Check data.rc field
   if (response?.data?.rc !== undefined) {
     if (response.data.rc === '0' || response.data.rc === 0) {
-      return 'SUCCESS';
+      return DigiflazzTransactionStatus.SUCCESS;
     }
-    return 'FAILED';
+    return DigiflazzTransactionStatus.FAILED;
   }
 
   // Fallback: Check top-level rc field
   if (response?.rc !== undefined) {
     if (response.rc === '0' || response.rc === 0) {
-      return 'SUCCESS';
+      return DigiflazzTransactionStatus.SUCCESS;
     }
-    return 'FAILED';
+    return DigiflazzTransactionStatus.FAILED;
   }
 
   // Default: FAILED
-  return 'FAILED';
+  return DigiflazzTransactionStatus.FAILED;
+}
+
+interface DigiflazzTransaction {
+  id: string;
+  refId: string;
+  orderId: string | null;
+  status: string;
+  amount: number | null;
+  updatedAt: Date;
 }
 
 // Process single transaction
-async function processTransaction(tx: any): Promise<{
+async function processTransaction(tx: DigiflazzTransaction): Promise<{
   success: boolean;
   newStatus: string;
   orderUpdated: boolean;
@@ -86,7 +108,8 @@ async function processTransaction(tx: any): Promise<{
 }> {
   try {
     // Call Digiflazz status API
-    const digiflazzResponse = await digiflazzStatus(tx.refId);
+    const digiflazzResponseRaw = await digiflazzStatus(tx.refId);
+    const digiflazzResponse = digiflazzResponseRaw as unknown as DigiflazzStatusResponse;
 
     // Determine new status
     const newStatus = determineStatus(digiflazzResponse);
@@ -94,9 +117,14 @@ async function processTransaction(tx: any): Promise<{
     // Update transaction
     // IMPORTANT: Never update buyer_sku_code and customer_no from status response
     // These fields should remain as originally set from topup/order
-    const updateData: any = {
+    const updateData: {
+      status: DigiflazzTransactionStatus;
+      digiflazzResponse: Prisma.InputJsonValue;
+      updatedAt: Date;
+      amount?: number | null;
+    } = {
       status: newStatus,
-      digiflazzResponse, // Save full response as-is
+      digiflazzResponse: digiflazzResponse as Prisma.InputJsonValue, // Save full response as-is
       updatedAt: new Date(),
     };
 
@@ -117,7 +145,7 @@ async function processTransaction(tx: any): Promise<{
 
     // If status became SUCCESS and order_id is not null, update order
     let orderUpdated = false;
-    if (newStatus === 'SUCCESS' && tx.orderId) {
+    if (newStatus === DigiflazzTransactionStatus.SUCCESS && tx.orderId) {
       const order = await prisma.order.findUnique({
         where: { id: tx.orderId },
         select: { fulfilledAt: true },
@@ -133,7 +161,7 @@ async function processTransaction(tx: any): Promise<{
     }
 
     return { success: true, newStatus, orderUpdated };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     console.error('[cron/digiflazz/poll] transaction error', {
@@ -167,7 +195,7 @@ async function processTransaction(tx: any): Promise<{
 
 // Process transactions in batches with max concurrency
 async function processBatch(
-  transactions: any[],
+  transactions: DigiflazzTransaction[],
   maxConcurrency: number = 3
 ): Promise<{
   processed: number;
@@ -205,9 +233,9 @@ async function processBatch(
       }
 
       if (result.success) {
-        if (result.newStatus === 'SUCCESS') {
+        if (result.newStatus === DigiflazzTransactionStatus.SUCCESS) {
           updatedSuccess++;
-        } else if (result.newStatus === 'FAILED') {
+        } else if (result.newStatus === DigiflazzTransactionStatus.FAILED) {
           updatedFailed++;
         } else {
           stillPending++;
@@ -247,8 +275,12 @@ async function handler(request: Request) {
     const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
 
     // Build where clause
-    const whereClause: any = {
-      status: 'PENDING',
+    const whereClause: {
+      status: DigiflazzTransactionStatus;
+      orderId?: { not: null };
+      updatedAt: { lt: Date };
+    } = {
+      status: DigiflazzTransactionStatus.PENDING,
       updatedAt: {
         lt: thirtySecondsAgo,
       },
@@ -280,7 +312,7 @@ async function handler(request: Request) {
     // Count skipped recent transactions (for info)
     const skippedRecent = await prisma.digiflazzTransaction.count({
       where: {
-        status: 'PENDING',
+        status: DigiflazzTransactionStatus.PENDING,
         updatedAt: {
           gte: thirtySecondsAgo,
         },
@@ -328,7 +360,7 @@ async function handler(request: Request) {
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[cron/digiflazz/poll] error', {
       message: error instanceof Error ? error.message : 'Unknown error',
       name: error instanceof Error ? error.name : 'Unknown',

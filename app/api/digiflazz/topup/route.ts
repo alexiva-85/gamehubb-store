@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { digiflazzTopup } from '@/lib/digiflazz';
 
@@ -10,9 +11,22 @@ function isTopupEnabled(): boolean {
   return process.env.DIGIFLAZZ_TOPUP_ENABLED === 'true';
 }
 
+interface DigiflazzTopupResponse {
+  data?: {
+    status?: string;
+    rc?: string | number;
+    price?: number;
+    amount?: number;
+  };
+  rc?: string | number;
+  price?: number;
+  amount?: number;
+  message?: string;
+}
+
 // Determine status from Digiflazz response
 // Priority: data.status field > data.rc field
-function determineStatus(response: any): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
+function determineStatus(response: DigiflazzTopupResponse): 'CREATED' | 'SENT' | 'SUCCESS' | 'FAILED' | 'PENDING' {
   // Priority 1: Check data.status field (most reliable indicator from Digiflazz)
   if (response?.data?.status) {
     const status = String(response.data.status).trim();
@@ -117,13 +131,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Call Digiflazz API
-    let digiflazzResponse: any;
+    let digiflazzResponse: DigiflazzTopupResponse;
     try {
-      digiflazzResponse = await digiflazzTopup({
+      const response = await digiflazzTopup({
         refId,
         buyerSkuCode,
         customerNo,
       });
+      digiflazzResponse = response as unknown as DigiflazzTopupResponse;
     } catch (error) {
       // Update status to FAILED on error
       await prisma.digiflazzTransaction.update({
@@ -156,8 +171,8 @@ export async function POST(request: NextRequest) {
       where: { id: transaction.id },
       data: {
         status: newStatus,
-        digiflazzResponse,
-        amount: digiflazzResponse.price || digiflazzResponse.amount || null,
+        digiflazzResponse: digiflazzResponse as Prisma.InputJsonValue,
+        amount: digiflazzResponse?.price || digiflazzResponse?.amount || digiflazzResponse?.data?.price || digiflazzResponse?.data?.amount || null,
       },
     });
 

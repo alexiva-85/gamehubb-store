@@ -12,7 +12,23 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: 'ref_id or orderId required' }, { status: 400 });
   }
 
-  let rows: any[] = [];
+  interface TransactionRow {
+    refId: string;
+    orderId: string | null;
+    status: string;
+    buyerSkuCode: string | null;
+    customerNo: string | null;
+    amount: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+    order: {
+      id: string;
+      status: string;
+      productSku: string | null;
+      customerNo: string | null;
+    } | null;
+  }
+  let rows: TransactionRow[] = [];
   let count = 0;
   let searchBy = '';
 

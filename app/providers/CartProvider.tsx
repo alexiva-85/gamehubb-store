@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { Cart, CartItem } from '@/lib/cart';
 import {
   getCart as getCartFromStorage,
@@ -24,19 +24,31 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<Cart>({ items: [] });
-  const [mounted, setMounted] = useState(false);
+// Safe localStorage access helper
+function getCartFromStorageSafely(): Cart {
+  if (typeof window === 'undefined') {
+    return { items: [] };
+  }
+  try {
+    return getCartFromStorage();
+  } catch {
+    return { items: [] };
+  }
+}
 
-  // Load cart from localStorage on mount
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  // Use lazy initializer to load cart on first render (client-side only)
+  const [cart, setCart] = useState<Cart>(getCartFromStorageSafely);
+  const mountedRef = useRef(false);
+
+  // Mark as mounted after first render (not setState, just ref)
   useEffect(() => {
-    setMounted(true);
-    setCart(getCartFromStorage());
+    mountedRef.current = true;
   }, []);
 
   // Sync with localStorage changes (for cross-tab sync)
   useEffect(() => {
-    if (!mounted) return;
+    if (!mountedRef.current) return;
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'gamehubb_cart') {
@@ -46,7 +58,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [mounted]);
+  }, []);
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>) => {
     const newCart = addToCartStorage(item);

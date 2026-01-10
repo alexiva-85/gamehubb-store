@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Card from '@/app/components/Card';
 
@@ -26,7 +26,7 @@ interface WithdrawalRequest {
   rateCapturedAt: string | null;
   payoutFeeRub: number | null;
   payoutNotes: string | null;
-  payoutSnapshot: any;
+  payoutSnapshot: Record<string, unknown> | null;
 }
 
 // Deterministic date/time formatter (fixes hydration mismatch)
@@ -36,12 +36,6 @@ const formatDateTime = (value: string | Date) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-// Deterministic number formatter (fixes hydration mismatch)
-const formatInt = (v: number | null | undefined): string => {
-  if (v === null || v === undefined) return '-';
-  const n = Math.round(v);
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-};
 
 // Deterministic decimal formatter (2 decimal places)
 const formatDecimal = (v: number | null | undefined): string => {
@@ -52,11 +46,7 @@ const formatDecimal = (v: number | null | undefined): string => {
   return parts[1] ? `${intPart}.${parts[1].padEnd(2, '0')}` : intPart;
 };
 
-interface WithdrawalsClientProps {
-  adminKey: string;
-}
-
-export default function WithdrawalsClient({ adminKey: propsAdminKey }: WithdrawalsClientProps) {
+export default function WithdrawalsClient() {
   const params = useSearchParams();
   const key = params.get('key') ?? '';
 
@@ -76,14 +66,14 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
   const [payoutNotes, setPayoutNotes] = useState('');
 
   // Helper to add key to URL
-  const withKey = (path: string) => {
+  const withKey = useCallback((path: string) => {
     if (!key) return path;
     const sep = path.includes('?') ? '&' : '?';
     return `${path}${sep}key=${encodeURIComponent(key)}`;
-  };
+  }, [key]);
 
   // Wrapper for admin fetch requests
-  async function adminFetch(path: string, init: RequestInit = {}) {
+  const adminFetch = useCallback((path: string, init: RequestInit = {}) => {
     const url = withKey(path);
     return fetch(url, {
       ...init,
@@ -95,13 +85,9 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
         'x-admin-key': key,
       },
     });
-  }
+  }, [withKey, key]);
 
-  useEffect(() => {
-    fetchRequests();
-  }, [key]);
-
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -126,7 +112,11 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
     } finally {
       setLoading(false);
     }
-  };
+  }, [adminFetch]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const updateStatus = async (id: string, status: 'APPROVED' | 'PAID' | 'REJECTED') => {
     // Validate adminNote for REJECTED
@@ -148,7 +138,20 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
     }
 
     try {
-      const body: any = {
+      const body: {
+        status: string;
+        adminNote: string | null;
+        txHash: string | null;
+        payout?: {
+          asset: string;
+          amount: string;
+          baseRub: string;
+          rate: string | null;
+          rateSource: string | null;
+          feeRub: string | null;
+          notes: string | null;
+        };
+      } = {
         status,
         adminNote: adminNote || null,
         txHash: txHash || null,

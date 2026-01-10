@@ -46,7 +46,7 @@ export function validateTelegramInitData(initData: string, botToken: string): bo
  * @param initData - Raw initData string
  * @returns Parsed user data or null
  */
-export function parseTelegramUser(initData: string): { id: string; [key: string]: any } | null {
+export function parseTelegramUser(initData: string): { id: string; [key: string]: unknown } | null {
   if (!initData) {
     return null;
   }
@@ -97,7 +97,7 @@ export async function sendTelegramMessage(
   botToken: string,
   chatId: string | number,
   text: string
-): Promise<any> {
+): Promise<Record<string, unknown>> {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   
   try {
