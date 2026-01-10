@@ -87,27 +87,68 @@ async function fetchMobileLegendsProducts(): Promise<DigiflazzProduct[]> {
   const data = await response.body.json() as unknown;
   
   if (typeof data !== 'object' || data === null) {
-    throw new Error('Invalid response format from Digiflazz');
+    throw new Error('Invalid response format from Digiflazz: response is not an object');
   }
 
   const responseData = data as DigiflazzResponse;
 
-  // Extract products from response
-  if (responseData.rc !== '0' && responseData.rc !== 0) {
-    throw new Error(`Digiflazz API error: rc=${responseData.rc}`);
+  // Log diagnostics (safe, no secrets)
+  const hasRc = 'rc' in responseData;
+  const hasData = 'data' in responseData;
+  const dataIsArray = Array.isArray(responseData.data);
+  const dataLength = dataIsArray ? (responseData.data as unknown[]).length : 0;
+  
+  console.log('[admin/digiflazz/sync/mobile-legends] response diagnostics', {
+    status: response.statusCode,
+    responseType: typeof responseData,
+    hasRc,
+    rc: hasRc ? responseData.rc : undefined,
+    hasData,
+    dataIsArray,
+    dataLength,
+    responseKeys: Object.keys(responseData).filter(k => k !== 'data' && k !== 'rc'),
+  });
+
+  // Validate rc only if it exists
+  if (hasRc && responseData.rc !== undefined && responseData.rc !== null) {
+    const rc = responseData.rc;
+    // rc can be '0', 0, or '00' for success
+    if (rc !== '0' && rc !== 0 && rc !== '00') {
+      const errorMessage = typeof responseData === 'object' && 'message' in responseData 
+        ? String(responseData.message) 
+        : undefined;
+      const errorDetails = errorMessage 
+        ? `Digiflazz API error: rc=${rc}, message=${errorMessage}`
+        : `Digiflazz API error: rc=${rc}`;
+      throw new Error(errorDetails);
+    }
   }
 
+  // Extract products from response
+  // Success is determined by presence of data array, not just rc
   let allProducts: DigiflazzProduct[] = [];
 
   if (Array.isArray(responseData.data)) {
     allProducts = responseData.data as DigiflazzProduct[];
-  } else if (typeof responseData.data === 'object') {
+  } else if (responseData.data && typeof responseData.data === 'object') {
     const dataObj = responseData.data as Record<string, unknown>;
     if (Array.isArray(dataObj.items)) {
       allProducts = dataObj.items as DigiflazzProduct[];
     } else if (Array.isArray(dataObj.data)) {
       allProducts = dataObj.data as DigiflazzProduct[];
     }
+  }
+
+  // If no products found and data exists but is not an array, it's an error
+  if (allProducts.length === 0 && responseData.data && !Array.isArray(responseData.data)) {
+    const responseKeys = Object.keys(responseData).filter(k => k !== 'data' && k !== 'rc');
+    const errorDetails = [
+      'Digiflazz response has data but it is not an array',
+      `Response keys: ${responseKeys.join(', ')}`,
+      responseData.message ? `Message: ${responseData.message}` : null,
+      responseData.error ? `Error: ${responseData.error}` : null,
+    ].filter(Boolean).join('. ');
+    throw new Error(errorDetails);
   }
 
   // Filter for Mobile Legends products: category === 'Games' and brand === 'MOBILE LEGENDS'
@@ -254,17 +295,27 @@ export async function POST(req: NextRequest) {
       skipped,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+    
     console.error('[admin/digiflazz/sync/mobile-legends] error', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      name: error instanceof Error ? error.name : 'Unknown',
+      message: errorMessage,
+      name: errorName,
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
+    // Always return JSON with error and details
     return NextResponse.json(
       {
         error: 'Internal error',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: errorMessage,
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
   }
 }
