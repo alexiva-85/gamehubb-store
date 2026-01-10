@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Card from '@/app/components/Card';
+import { calcPayoutAmountUsdt } from '@/lib/money';
 
 interface WithdrawalRequest {
   id: string;
@@ -64,6 +65,10 @@ export default function WithdrawalsClient() {
   const [rateSource, setRateSource] = useState('MANUAL');
   const [payoutFeeRub, setPayoutFeeRub] = useState('');
   const [payoutNotes, setPayoutNotes] = useState('');
+  // Rate calculator state
+  const [rateCalculatorId, setRateCalculatorId] = useState<string | null>(null);
+  const [rateInput, setRateInput] = useState('');
+  const [fixingRate, setFixingRate] = useState(false);
 
   // Helper to add key to URL
   const withKey = useCallback((path: string) => {
@@ -197,6 +202,42 @@ export default function WithdrawalsClient() {
     } catch (err) {
       console.error('Error updating status:', err);
       alert('Ошибка обновления');
+    }
+  };
+
+  const fixRate = async (id: string) => {
+    if (!rateInput || isNaN(Number(rateInput)) || Number(rateInput) <= 0) {
+      alert('Введите корректный курс (положительное число)');
+      return;
+    }
+
+    try {
+      setFixingRate(true);
+      const response = await adminFetch(`/api/admin/withdrawals/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          action: 'fixRate',
+          rateRubPerUsdt: rateInput,
+          ...(adminNote ? { adminNote } : {}),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Ошибка фиксации курса');
+        return;
+      }
+
+      // Reset form and refresh
+      setRateCalculatorId(null);
+      setRateInput('');
+      setAdminNote('');
+      fetchRequests();
+    } catch (err) {
+      console.error('Error fixing rate:', err);
+      alert('Ошибка фиксации курса');
+    } finally {
+      setFixingRate(false);
     }
   };
 
@@ -353,6 +394,102 @@ export default function WithdrawalsClient() {
                       <div>
                         <p className="text-zinc-400 text-xs">Примечания к выплате</p>
                         <p className="text-zinc-200 text-sm">{request.payoutNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Rate calculator (for PENDING/APPROVED requests) */}
+                {(request.status === 'PENDING' || request.status === 'APPROVED') && (
+                  <div className="pt-3 border-t border-[#3a3a3a]">
+                    {rateCalculatorId === request.id ? (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium text-zinc-300">Калькулятор выплаты</p>
+                        <div>
+                          <label className="block text-sm text-zinc-400 mb-1">
+                            Курс (RUB за 1 USDT) <span className="text-red-400">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={rateInput}
+                            onChange={(e) => setRateInput(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                            placeholder="100.00"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-zinc-400 mb-1">
+                            Сумма к выплате (USDT)
+                          </label>
+                          <div className="px-3 py-2 bg-[#0a0a0a] border border-[#3a3a3a] rounded text-white text-sm">
+                            {rateInput && !isNaN(Number(rateInput)) && Number(rateInput) > 0
+                              ? `${calcPayoutAmountUsdt(request.amountRub, rateInput)} USDT`
+                              : '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-zinc-400 mb-1">
+                            Комментарий (опционально)
+                          </label>
+                          <textarea
+                            value={adminNote}
+                            onChange={(e) => setAdminNote(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded text-white text-sm"
+                            rows={2}
+                            placeholder="Опционально"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => fixRate(request.id)}
+                            disabled={fixingRate || !rateInput || isNaN(Number(rateInput)) || Number(rateInput) <= 0}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white text-sm rounded"
+                          >
+                            {fixingRate ? 'Сохранение...' : 'Зафиксировать курс'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRateCalculatorId(null);
+                              setRateInput('');
+                              setAdminNote('');
+                            }}
+                            disabled={fixingRate}
+                            className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 disabled:bg-zinc-800 disabled:cursor-not-allowed text-white text-sm rounded"
+                          >
+                            Отмена
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          {request.exchangeRate && request.payoutAmount ? (
+                            <div className="text-sm">
+                              <p className="text-zinc-400">Курс зафиксирован:</p>
+                              <p className="text-zinc-200">
+                                {formatDecimal(request.exchangeRate)} ₽/USDT → {formatDecimal(request.payoutAmount)} USDT
+                              </p>
+                              {request.rateCapturedAt && (
+                                <p className="text-zinc-500 text-xs mt-1">
+                                  {formatDateTime(request.rateCapturedAt)}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-zinc-400">Курс не зафиксирован</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setRateCalculatorId(request.id);
+                            setRateInput(request.exchangeRate?.toString() || '');
+                            setAdminNote(request.adminNote || '');
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
+                        >
+                          {request.exchangeRate ? 'Изменить курс' : 'Зафиксировать курс'}
+                        </button>
                       </div>
                     )}
                   </div>

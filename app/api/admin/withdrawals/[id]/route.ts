@@ -19,8 +19,80 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status, adminNote, txHash, payout } = body;
+    const { status, adminNote, txHash, payout, action, rateRubPerUsdt } = body;
 
+    // Handle "fixRate" action (fix exchange rate before payment)
+    if (action === 'fixRate') {
+      // Validate rate
+      if (!rateRubPerUsdt || isNaN(Number(rateRubPerUsdt)) || Number(rateRubPerUsdt) <= 0) {
+        return NextResponse.json(
+          { 
+            code: 'INVALID_RATE',
+            error: 'rateRubPerUsdt is required and must be a positive number' 
+          },
+          { status: 400 }
+        );
+      }
+
+      // Get current withdrawal request
+      const currentRequest = await prisma.withdrawalRequest.findUnique({
+        where: { id },
+        select: { 
+          amountRub: true,
+          status: true,
+        },
+      });
+
+      if (!currentRequest) {
+        return NextResponse.json(
+          { error: 'Withdrawal request not found' },
+          { status: 404 }
+        );
+      }
+
+      // Don't allow fixing rate for PAID requests
+      if (currentRequest.status === 'PAID') {
+        return NextResponse.json(
+          { 
+            code: 'IMMUTABLE_PAYOUT',
+            error: 'Cannot modify payout snapshot after request is marked as PAID' 
+          },
+          { status: 400 }
+        );
+      }
+
+      // Calculate payout amount (amountRub is in kopecks, convert to rubles)
+      const amountRub = currentRequest.amountRub / 100;
+      const rate = Number(rateRubPerUsdt);
+      const payoutAmount = Math.round((amountRub / rate) * 100) / 100; // Round to 2 decimal places
+
+      // Update withdrawal request with rate and calculated payout
+      const updated = await prisma.withdrawalRequest.update({
+        where: { id },
+        data: {
+          exchangeRate: new Prisma.Decimal(rate),
+          payoutAmount: new Prisma.Decimal(payoutAmount),
+          payoutBaseRub: new Prisma.Decimal(amountRub),
+          payoutAsset: 'USDT', // Default to USDT for now
+          rateSource: 'MANUAL',
+          rateCapturedAt: new Date(),
+          // Update adminNote if provided
+          ...(adminNote !== undefined ? { adminNote: adminNote || null } : {}),
+        },
+      });
+
+      return NextResponse.json({
+        id: updated.id,
+        exchangeRate: toNumberSafe(updated.exchangeRate),
+        payoutAmount: toNumberSafe(updated.payoutAmount),
+        payoutBaseRub: toNumberSafe(updated.payoutBaseRub),
+        rateSource: updated.rateSource,
+        rateCapturedAt: updated.rateCapturedAt?.toISOString() || null,
+        adminNote: updated.adminNote,
+      });
+    }
+
+    // Original logic for status updates
     if (!status || !['APPROVED', 'PAID', 'REJECTED'].includes(status)) {
       return NextResponse.json(
         { error: 'Invalid status' },

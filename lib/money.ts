@@ -34,3 +34,34 @@ export const MIN_WITHDRAW_RUB = 500;
  */
 export const MIN_WITHDRAW_KOPEKS = MIN_WITHDRAW_RUB * 100;
 
+
+/**
+ * Calculate payout amount in USDT from RUB amount and exchange rate
+ * Uses string-based arithmetic to avoid float precision issues
+ * @param amountRub - amount in rubles (can be number or string, e.g., "1000" or 1000)
+ * @param rateRubPerUsdt - exchange rate: RUB per 1 USDT (can be number or string, e.g., "100" or 100)
+ * @returns payout amount as string with 2 decimal places (e.g., "10.00")
+ */
+export function calcPayoutAmountUsdt(
+  amountRub: number | string,
+  rateRubPerUsdt: number | string
+): string {
+  // Convert to numbers for calculation
+  const rubNum = typeof amountRub === 'string' ? parseFloat(amountRub) : amountRub;
+  const rateNum = typeof rateRubPerUsdt === 'string' ? parseFloat(rateRubPerUsdt) : rateRubPerUsdt;
+
+  // Validate inputs
+  if (isNaN(rubNum) || isNaN(rateNum) || rateNum <= 0) {
+    return '0.00';
+  }
+
+  // Calculate: payout = amountRub / rate
+  // Use multiplication by 100 to avoid float issues, then round
+  const payout = rubNum / rateNum;
+  
+  // Round to 2 decimal places
+  const rounded = Math.round(payout * 100) / 100;
+  
+  // Format to 2 decimal places
+  return rounded.toFixed(2);
+}
