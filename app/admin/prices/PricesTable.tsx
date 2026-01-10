@@ -219,8 +219,15 @@ export default function PricesTable({ initialData, searchParams }: PricesTablePr
                 });
 
                 if (!response.ok) {
-                  const errorData = await response.json();
-                  throw new Error(errorData.error || 'Ошибка синхронизации');
+                  let errorMessage = 'Ошибка синхронизации';
+                  try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.details || errorMessage;
+                  } catch {
+                    // If response is not JSON, use status text
+                    errorMessage = `Ошибка ${response.status}: ${response.statusText}`;
+                  }
+                  throw new Error(errorMessage);
                 }
 
                 const result = await response.json();

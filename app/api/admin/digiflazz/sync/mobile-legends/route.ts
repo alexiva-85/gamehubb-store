@@ -68,12 +68,11 @@ async function fetchMobileLegendsProducts(): Promise<DigiflazzProduct[]> {
   const url = `${DIGIFLAZZ_BASE_URL}/price-list`;
   const proxyAgent = getProxyAgent();
 
+  // Request all prepaid products (Digiflazz may not support category/brand filters in request)
   const body = {
     cmd: 'prepaid',
     username: DIGIFLAZZ_USERNAME,
     sign: signature,
-    category: 'Games',
-    brand: 'MOBILE LEGENDS',
   };
 
   const response = await request(url, {
@@ -98,25 +97,36 @@ async function fetchMobileLegendsProducts(): Promise<DigiflazzProduct[]> {
     throw new Error(`Digiflazz API error: rc=${responseData.rc}`);
   }
 
-  if (!responseData.data) {
-    return [];
-  }
+  let allProducts: DigiflazzProduct[] = [];
 
   if (Array.isArray(responseData.data)) {
-    return responseData.data as DigiflazzProduct[];
-  }
-
-  if (typeof responseData.data === 'object') {
+    allProducts = responseData.data as DigiflazzProduct[];
+  } else if (typeof responseData.data === 'object') {
     const dataObj = responseData.data as Record<string, unknown>;
     if (Array.isArray(dataObj.items)) {
-      return dataObj.items as DigiflazzProduct[];
-    }
-    if (Array.isArray(dataObj.data)) {
-      return dataObj.data as DigiflazzProduct[];
+      allProducts = dataObj.items as DigiflazzProduct[];
+    } else if (Array.isArray(dataObj.data)) {
+      allProducts = dataObj.data as DigiflazzProduct[];
     }
   }
 
-  return [];
+  // Filter for Mobile Legends products: category === 'Games' and brand === 'MOBILE LEGENDS'
+  const mobileLegendsProducts = allProducts.filter((item) => {
+    const category = item.category;
+    const brand = item.brand;
+    
+    // Check if category is 'Games' (case-insensitive)
+    const categoryMatch = category && typeof category === 'string' && 
+      category.toLowerCase().trim() === 'games';
+    
+    // Check if brand is 'MOBILE LEGENDS' (case-insensitive)
+    const brandMatch = brand && typeof brand === 'string' && 
+      brand.toUpperCase().trim() === 'MOBILE LEGENDS';
+    
+    return categoryMatch && brandMatch;
+  });
+
+  return mobileLegendsProducts;
 }
 
 export async function POST(req: NextRequest) {
