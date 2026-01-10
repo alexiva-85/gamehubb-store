@@ -57,9 +57,8 @@ interface WithdrawalsClientProps {
 }
 
 export default function WithdrawalsClient({ adminKey: propsAdminKey }: WithdrawalsClientProps) {
-  const searchParams = useSearchParams();
-  const urlKey = searchParams.get('key') ?? '';
-  const effectiveKey = urlKey || propsAdminKey || '';
+  const params = useSearchParams();
+  const key = params.get('key') ?? '';
 
   const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,17 +75,38 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
   const [payoutFeeRub, setPayoutFeeRub] = useState('');
   const [payoutNotes, setPayoutNotes] = useState('');
 
-  useEffect(() => {
-    fetchRequests(effectiveKey);
-  }, [effectiveKey]);
+  // Helper to add key to URL
+  const withKey = (path: string) => {
+    if (!key) return path;
+    const sep = path.includes('?') ? '&' : '?';
+    return `${path}${sep}key=${encodeURIComponent(key)}`;
+  };
 
-  const fetchRequests = async (key: string) => {
+  // Wrapper for admin fetch requests
+  async function adminFetch(path: string, init: RequestInit = {}) {
+    const url = withKey(path);
+    return fetch(url, {
+      ...init,
+      cache: 'no-store',
+      headers: {
+        ...(init.headers || {}),
+        'Content-Type': 'application/json',
+        // fallback, чтобы даже при ошибке URL ключ дошёл:
+        'x-admin-key': key,
+      },
+    });
+  }
+
+  useEffect(() => {
+    fetchRequests();
+  }, [key]);
+
+  const fetchRequests = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const url = key ? `/api/admin/withdrawals?key=${encodeURIComponent(key)}` : '/api/admin/withdrawals';
-      const response = await fetch(url);
+      const response = await adminFetch('/api/admin/withdrawals');
       
       if (response.status === 401) {
         setError('Неверный или отсутствует admin key. Добавьте ?key=... к URL (используйте ADMIN_KEY из .env.local)');
@@ -129,7 +149,6 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
 
     try {
       const body: any = {
-        key: effectiveKey,
         status,
         adminNote: adminNote || null,
         txHash: txHash || null,
@@ -148,11 +167,10 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
         };
       }
 
-      const response = await fetch(`/api/admin/withdrawals/${id}`, {
+      // Use endpoint with trailing slash
+      const endpoint = `/api/admin/withdrawals/${id}/`;
+      const response = await adminFetch(endpoint, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(body),
       });
 
@@ -172,7 +190,7 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
       setRateSource('MANUAL');
       setPayoutFeeRub('');
       setPayoutNotes('');
-      fetchRequests(effectiveKey);
+      fetchRequests();
     } catch (err) {
       console.error('Error updating status:', err);
       alert('Ошибка обновления');
@@ -202,6 +220,15 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
     return (
       <Card>
         <p className="text-red-400">{error}</p>
+      </Card>
+    );
+  }
+
+  // Show error if key is missing
+  if (!key) {
+    return (
+      <Card>
+        <p className="text-red-400">Missing admin key. Добавьте ?key=... к URL</p>
       </Card>
     );
   }
@@ -477,7 +504,8 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
                       {request.status === 'PENDING' && (
                         <button
                           onClick={() => updateStatus(request.id, 'APPROVED')}
-                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                          disabled={!key}
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Одобрить
                         </button>
@@ -485,14 +513,16 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
                       {request.status === 'APPROVED' && (
                         <button
                           onClick={() => updateStatus(request.id, 'PAID')}
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                          disabled={!key}
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Отметить как оплачено
                         </button>
                       )}
                       <button
                         onClick={() => updateStatus(request.id, 'REJECTED')}
-                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                        disabled={!key}
+                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Отклонить
                       </button>
@@ -530,7 +560,8 @@ export default function WithdrawalsClient({ adminKey: propsAdminKey }: Withdrawa
                             setPayoutAmount(String(request.amountRub));
                           }
                         }}
-                        className="px-4 py-2 bg-[#4DA3FF] text-white rounded hover:bg-[#3d8fdf] text-sm"
+                        disabled={!key}
+                        className="px-4 py-2 bg-[#4DA3FF] text-white rounded hover:bg-[#3d8fdf] text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Изменить статус
                       </button>
