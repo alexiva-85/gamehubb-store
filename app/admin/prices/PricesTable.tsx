@@ -38,6 +38,7 @@ export default function PricesTable({ initialData, searchParams }: PricesTablePr
   const [editPriceRub, setEditPriceRub] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   // Deterministic number formatter (fixes hydration mismatch)
   const formatInt = (v: number) => {
@@ -191,13 +192,54 @@ export default function PricesTable({ initialData, searchParams }: PricesTablePr
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex gap-2">
           <button
             onClick={applyFilters}
             disabled={isPending}
             className="px-4 py-2 bg-[#4DA3FF] text-white rounded hover:bg-[#3d8fdf] text-sm disabled:opacity-50"
           >
             Применить фильтры
+          </button>
+          <button
+            onClick={async () => {
+              setSyncing(true);
+              setError(null);
+              setSuccess(null);
+              
+              try {
+                const adminKey = searchParams.key || '';
+                const url = `/api/admin/digiflazz/sync/mobile-legends${adminKey ? `?key=${encodeURIComponent(adminKey)}` : ''}`;
+                
+                const response = await fetch(url, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': adminKey,
+                  },
+                });
+
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || 'Ошибка синхронизации');
+                }
+
+                const result = await response.json();
+                setSuccess(`Синхронизация завершена: импортировано ${result.imported}, обновлено ${result.updated}, пропущено ${result.skipped}`);
+                
+                // Refresh the page to show new products
+                setTimeout(() => {
+                  router.refresh();
+                }, 1000);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Ошибка синхронизации');
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing || isPending}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {syncing ? 'Синхронизация...' : 'Sync Mobile Legends from Digiflazz'}
           </button>
         </div>
       </Card>
